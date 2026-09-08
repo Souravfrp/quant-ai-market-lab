@@ -87,3 +87,153 @@ $$
 
 which will subsequently appear in convex portfolio-optimization problems.
 
+
+---
+
+## 2. Return Transformation
+
+Financial price levels are transformed into returns before statistical
+modeling.
+
+For asset \(i\), the one-period simple return is
+
+$$
+R_{i,t}
+=
+\frac{P_{i,t}}{P_{i,t-1}} - 1.
+$$
+
+The corresponding logarithmic return is
+
+$$
+r_{i,t}
+=
+\log\left(\frac{P_{i,t}}{P_{i,t-1}}\right)
+=
+\log P_{i,t} - \log P_{i,t-1}.
+$$
+
+Simple and logarithmic returns satisfy the exact identity
+
+$$
+r_{i,t} = \log(1 + R_{i,t}).
+$$
+
+This identity is used in the implementation as a numerical consistency
+check.
+
+### Temporal additivity of log returns
+
+Log returns are additive across consecutive time periods. For example,
+
+$$
+\sum_{t=1}^{k} r_{i,t}
+=
+\log\left(\frac{P_{i,k}}{P_{i,0}}\right).
+$$
+
+This property is useful in quantitative time-series analysis.
+
+### Return matrix
+
+For each trading date, the cross-asset log-return vector is
+
+$$
+r_t =
+\begin{pmatrix}
+r_{1,t} \\
+r_{2,t} \\
+\vdots \\
+r_{n,t}
+\end{pmatrix}
+\in \mathbb{R}^{n}.
+$$
+
+The validated price dataset contains 2932 observations for 8 assets.
+Because a one-period return requires both a current and previous price,
+the resulting return matrices contain
+
+$$
+2932 - 1 = 2931
+$$
+
+observations.
+
+Therefore,
+
+$$
+R_{\mathrm{simple}},
+R_{\log}
+\in
+\mathbb{R}^{2931 \times 8}.
+$$
+
+### Numerical validation
+
+The implementation verifies that:
+
+1. the return matrices are non-empty,
+2. no missing values remain,
+3. all values are finite,
+4. simple and logarithmic returns satisfy their mathematical relationship
+   within a numerical tolerance.
+
+The consistency condition is
+
+$$
+\max_{i,t}
+\left|
+\log(1 + R_{i,t}) - r_{i,t}
+\right|
+\leq 10^{-12}.
+$$
+
+The observed calculation satisfies this condition.
+
+### Algorithmic viewpoint
+
+Computing returns requires processing each observation for every asset.
+For \(T\) dates and \(n\) assets, the computational work is approximately
+
+$$
+O(Tn).
+$$
+
+### Statistical viewpoint
+
+The return observations will be used to estimate quantities such as the
+sample mean vector
+
+$$
+\hat{\mu}
+=
+\frac{1}{T}
+\sum_{t=1}^{T} r_t
+$$
+
+and sample covariance matrix
+
+$$
+\hat{\Sigma}
+=
+\frac{1}{T-1}
+\sum_{t=1}^{T}
+(r_t-\hat{\mu})(r_t-\hat{\mu})^\top.
+$$
+
+These quantities connect the preprocessing stage to exploratory analysis,
+PCA, risk measurement, and portfolio construction.
+
+### Optimization viewpoint
+
+No optimization problem is solved during return computation.
+
+However, the estimated covariance matrix derived from these returns will
+later enter portfolio-risk objectives such as
+
+$$
+w^\top \hat{\Sigma} w,
+$$
+
+where \(w\) denotes the vector of portfolio weights.
+

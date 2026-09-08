@@ -17,3 +17,6 @@ data/raw/
 
 # Trained model files
 models/
+
+# Generated processed datasets
+data/processed/

@@ -15,6 +15,8 @@ RAW_DATA_PATH = PROJECT_ROOT / "data" / "raw" / "adjusted_close.csv"
 
 RESULTS_DIR = PROJECT_ROOT / "results"
 
+LOG_RETURNS_PATH = PROJECT_ROOT / "data" / "processed" / "log_returns.csv"
+
 
 def load_prices():
     """
@@ -28,6 +30,69 @@ def load_prices():
     )
 
     return prices
+def load_log_returns():
+    """
+    Load previously validated daily log returns.
+    """
+
+    log_returns = pd.read_csv(
+        LOG_RETURNS_PATH,
+        index_col=0,
+        parse_dates=True,
+    )
+
+    return log_returns
+def compute_annualized_volatility(log_returns):
+    """
+    Compute annualized volatility from daily log returns.
+    """
+
+    daily_volatility = log_returns.std()
+
+    annualized_volatility = daily_volatility * (252 ** 0.5)
+
+    return annualized_volatility
+
+def plot_annualized_volatility(annualized_volatility):
+    """
+    Plot annualized volatility for each asset and save the figure.
+    """
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    volatility_percent = 100 * annualized_volatility.sort_values(
+        ascending=False
+    )
+
+    ax = volatility_percent.plot(
+        kind="bar",
+        figsize=(10, 6),
+    )
+
+    ax.set_title("Annualized Historical Volatility by Asset")
+    ax.set_xlabel("Asset")
+    ax.set_ylabel("Annualized Volatility (%)")
+    ax.grid(True, axis="y", alpha=0.3)
+
+
+    for container in ax.containers:
+        ax.bar_label(
+            container,
+            fmt="%.1f%%",
+            padding=3,
+        )
+    figure_path = RESULTS_DIR / "annualized_volatility.png"
+
+    plt.tight_layout()
+    plt.savefig(
+        figure_path,
+        dpi=200,
+        bbox_inches="tight",
+    )
+
+    print(f"Saved figure to: {figure_path}")
+
+    plt.close()
 
 
 def normalize_prices(prices):
@@ -76,7 +141,10 @@ def plot_normalized_performance(normalized):
 
 if __name__ == "__main__":
     prices = load_prices()
+    log_returns = load_log_returns()
 
     normalized = normalize_prices(prices)
+    annualized_volatility = compute_annualized_volatility(log_returns)
 
     plot_normalized_performance(normalized)
+    plot_annualized_volatility(annualized_volatility)

@@ -237,3 +237,69 @@ $$
 
 where \(w\) denotes the vector of portfolio weights.
 
+## 3. Historical Volatility Estimation
+
+### Problem
+
+For each asset, estimate the historical variability of daily log returns
+and express that risk measure on an annualized scale.
+
+Let \(r_{i,t}\) denote the daily log return of asset \(i\) on return
+observation \(t\), with \(T_R = 2931\) return observations in the current
+dataset.
+
+### Mathematical formulation
+
+The sample mean return of asset \(i\) is
+
+$$
+\bar{r}_i
+=
+\frac{1}{T_R}
+\sum_{t=1}^{T_R} r_{i,t}.
+$$
+
+The sample daily volatility is the sample standard deviation
+
+$$
+s_i
+=
+\sqrt{
+\frac{1}{T_R-1}
+\sum_{t=1}^{T_R}
+(r_{i,t}-\bar{r}_i)^2
+}.
+$$
+
+Using the conventional approximation of 252 trading days per year,
+daily volatility is annualized as
+
+$$
+\hat{\sigma}_{i,\mathrm{annual}}
+=
+\sqrt{252}\,s_i.
+$$
+
+The square-root-of-time scaling follows from variance additivity under
+appropriate assumptions. It is an annualization convention and does not
+assert that real financial returns are perfectly independent or
+identically distributed.
+
+### Algorithmic viewpoint
+
+For \(n\) assets and \(T_R\) return observations, computing the sample
+standard deviation for every asset requires processing the return matrix
+and has time complexity \(O(T_R n)\).
+
+### Optimization viewpoint
+
+No optimization problem is solved in this stage. The volatility estimates
+are descriptive risk statistics. Later portfolio optimization will use the
+full covariance structure rather than individual asset volatilities alone.
+
+### Empirical result
+
+For the current sample, the estimated annualized historical volatilities
+range from approximately 14.8% for TLT to 40.5% for USO. These values
+describe historical return dispersion over the sample period and should
+not be interpreted as forecasts of future risk.

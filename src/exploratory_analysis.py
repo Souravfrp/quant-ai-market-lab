@@ -53,6 +53,70 @@ def compute_annualized_volatility(log_returns):
 
     return annualized_volatility
 
+def compute_correlation_matrix(log_returns):
+    """
+    Compute the cross-asset Pearson correlation matrix
+    from daily log returns.
+    """
+
+    correlation_matrix = log_returns.corr()
+
+    return correlation_matrix
+
+def plot_correlation_matrix(correlation_matrix):
+    """
+    Plot and save the cross-asset return correlation matrix.
+    """
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    fig, ax = plt.subplots(figsize=(9, 7))
+
+    image = ax.imshow(
+        correlation_matrix,
+        vmin=-1,
+        vmax=1,
+    )
+
+    assets = correlation_matrix.columns
+
+    ax.set_xticks(range(len(assets)))
+    ax.set_yticks(range(len(assets)))
+
+    ax.set_xticklabels(assets)
+    ax.set_yticklabels(assets)
+
+    for i in range(len(assets)):
+        for j in range(len(assets)):
+            ax.text(
+                j,
+                i,
+                f"{correlation_matrix.iloc[i, j]:.2f}",
+                ha="center",
+                va="center",
+            )
+
+    ax.set_title("Cross-Asset Daily Return Correlation")
+
+    fig.colorbar(
+        image,
+        ax=ax,
+        label="Pearson Correlation",
+    )
+
+    figure_path = RESULTS_DIR / "correlation_matrix.png"
+
+    plt.tight_layout()
+    plt.savefig(
+        figure_path,
+        dpi=200,
+        bbox_inches="tight",
+    )
+
+    print(f"Saved figure to: {figure_path}")
+
+    plt.close()
+
 def plot_annualized_volatility(annualized_volatility):
     """
     Plot annualized volatility for each asset and save the figure.
@@ -145,6 +209,11 @@ if __name__ == "__main__":
 
     normalized = normalize_prices(prices)
     annualized_volatility = compute_annualized_volatility(log_returns)
+    correlation_matrix = compute_correlation_matrix(log_returns)
 
     plot_normalized_performance(normalized)
     plot_annualized_volatility(annualized_volatility)
+    plot_correlation_matrix(correlation_matrix)
+
+    print("\nCross-Asset Correlation Matrix:")
+    print(correlation_matrix.round(3))

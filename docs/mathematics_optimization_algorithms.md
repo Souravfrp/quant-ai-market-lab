@@ -303,3 +303,140 @@ For the current sample, the estimated annualized historical volatilities
 range from approximately 14.8% for TLT to 40.5% for USO. These values
 describe historical return dispersion over the sample period and should
 not be interpreted as forecasts of future risk.
+
+## 4. Cross-Asset Correlation Analysis
+
+### Problem
+
+Individual asset volatility describes the variability of each return
+series separately, but portfolio risk also depends on how different
+assets move together.
+
+For the current universe of \(n=8\) assets, pairwise dependence is
+measured using the Pearson correlation coefficient.
+
+### Mathematical formulation
+
+For assets \(i\) and \(j\), the sample correlation is
+
+$$
+\rho_{ij}
+=
+\frac{\operatorname{Cov}(r_i,r_j)}
+{s_i s_j},
+$$
+
+where \(s_i\) and \(s_j\) are the sample standard deviations of the
+corresponding daily log-return series.
+
+The complete correlation matrix is
+
+$$
+C = [\rho_{ij}]_{i,j=1}^{n}.
+$$
+
+For the current asset universe,
+
+$$
+C \in \mathbb{R}^{8 \times 8}.
+$$
+
+A valid correlation matrix satisfies
+
+$$
+\rho_{ii}=1
+$$
+
+for every asset and
+
+$$
+\rho_{ij}=\rho_{ji},
+$$
+
+so that
+
+$$
+C=C^\top.
+$$
+
+Each correlation coefficient lies in the interval
+
+$$
+-1 \leq \rho_{ij} \leq 1.
+$$
+
+### Numerical validation
+
+The computed matrix has shape \(8\times8\).
+
+The maximum observed symmetry error was
+
+$$
+\max_{i,j} |\rho_{ij}-\rho_{ji}| = 0,
+$$
+
+and the maximum diagonal error was also zero.
+
+The observed correlation values ranged from approximately \(-0.203\)
+to \(1.000\), including the unit diagonal.
+
+### Algorithmic viewpoint
+
+Computing all pairwise correlations requires estimating relationships
+between approximately \(n^2\) pairs of assets across \(T_R\) return
+observations.
+
+The resulting time complexity is approximately
+
+$$
+O(T_R n^2).
+$$
+
+The correlation matrix itself requires
+
+$$
+O(n^2)
+$$
+
+storage.
+
+### Financial interpretation
+
+The strongest observed correlation between two distinct assets is
+approximately \(0.932\) between SPY and QQQ, indicating strong historical
+linear co-movement in their daily returns.
+
+TLT exhibits mildly negative correlations with several equity exposures,
+while GLD has relatively low correlations with many of the equity ETFs.
+
+These relationships illustrate the statistical basis of diversification:
+portfolio risk depends not only on individual asset volatility but also
+on cross-asset dependence.
+
+Correlation does not imply causation, and historical correlations are not
+guaranteed to remain stable across future market regimes.
+
+### Optimization viewpoint
+
+The correlation analysis is descriptive and does not itself solve an
+optimization problem.
+
+However, correlations are closely related to the covariance matrix.
+If \(D\) is the diagonal matrix of asset standard deviations, then
+
+$$
+\Sigma = D C D.
+$$
+
+Portfolio variance can subsequently be written as
+
+$$
+\sigma_p^2
+=
+w^\top \Sigma w,
+$$
+
+where \(w\) is the portfolio-weight vector.
+
+Thus, cross-asset dependence provides a direct mathematical bridge from
+exploratory analysis to portfolio optimization.

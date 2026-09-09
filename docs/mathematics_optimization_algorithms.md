@@ -11,8 +11,8 @@ implementation.
 
 ## 1. Market Data Representation
 
-Let there be \(n\) assets observed over \(T\) trading dates.
-
+Let there be \(n\) assets observed over \(T_P\) trading dates, where \(T_P\)
+denotes the number of price observations.
 The adjusted-price data are represented as a matrix
 
 $$
@@ -21,15 +21,15 @@ P =
 P_{1,1} & P_{2,1} & \cdots & P_{n,1} \\
 P_{1,2} & P_{2,2} & \cdots & P_{n,2} \\
 \vdots & \vdots & \ddots & \vdots \\
-P_{1,T} & P_{2,T} & \cdots & P_{n,T}
+P_{1,T_P} & P_{2,T_P} & \cdots & P_{n,T_P}
 \end{pmatrix}
-\in \mathbb{R}^{T \times n}.
+\in \mathbb{R}^{T_P \times n}.
 $$
 
 For the current project,
 
 $$
-T = 2932,
+T_P = 2932,
 \qquad
 n = 8.
 $$
@@ -149,15 +149,13 @@ r_{n,t}
 \in \mathbb{R}^{n}.
 $$
 
-The validated price dataset contains 2932 observations for 8 assets.
-Because a one-period return requires both a current and previous price,
-the resulting return matrices contain
+The validated price dataset contains \(T_P=2932\) price observations for
+\(n=8\) assets. Because a one-period return requires both a current and previous price, define the number of return observations as
 
 $$
-2932 - 1 = 2931
+T_R = T_P - 1 = 2931.
 $$
 
-observations.
 
 Therefore,
 
@@ -165,6 +163,8 @@ $$
 R_{\mathrm{simple}},
 R_{\log}
 \in
+\mathbb{R}^{T_R \times n}
+=
 \mathbb{R}^{2931 \times 8}.
 $$
 
@@ -193,10 +193,12 @@ The observed calculation satisfies this condition.
 ### Algorithmic viewpoint
 
 Computing returns requires processing each observation for every asset.
-For \(T\) dates and \(n\) assets, the computational work is approximately
+
+
+For \(T_P\) price observations and \(n\) assets, the computational work is approximately
 
 $$
-O(Tn).
+O(T_P n).
 $$
 
 ### Statistical viewpoint
@@ -735,6 +737,44 @@ operations, with \(O(n^2)\) matrix storage.
 For this project, \(n=8\), so the eigendecomposition is computationally small.
 The same formulation, however, makes the scaling behavior explicit for larger
 asset universes.
+
+
+
+### Scalability and Computational Perspective
+
+For the current universe of only \(n=8\) assets, the direct covariance and
+eigendecomposition approach is entirely appropriate. Introducing a more
+complicated algorithm here would add unnecessary implementation complexity
+without a meaningful computational benefit.
+
+The complexity analysis becomes important when considering a substantially
+larger asset universe. Covariance construction scales approximately as
+
+$$
+O(T_R n^2),
+$$
+
+while a full dense eigendecomposition scales approximately as
+
+$$
+O(n^3).
+$$
+
+Thus, increasing the number of assets can make both computation and
+\(O(n^2)\) matrix storage significantly more expensive.
+
+If only the leading \(k\) principal components are required, with
+\(k \ll n\), computing the complete eigendecomposition may perform more work
+than necessary. For sufficiently large problems, iterative or truncated
+methods can target only the dominant components rather than computing every
+eigenpair.
+
+This illustrates an algorithmic principle used throughout the project:
+the mathematically correct formulation is considered together with its
+computational cost, and more scalable alternatives are considered when the
+problem size makes them necessary. Optimization of computation should be
+motivated by an actual bottleneck rather than added solely for complexity.
+
 
 ### Predictive-Modeling Caveat
 

@@ -35,6 +35,30 @@ matplotlib, and Streamlit.
 Specific methodological references will be added in later sections when
 the corresponding techniques are introduced.
 
+
+## Principal Component Analysis
+
+### Methodological Reference
+
+The PCA formulation, including variance-maximizing orthogonal directions,
+eigendecomposition, and explained variance, is supported by:
+
+- Jolliffe, I. T., and Cadima, J. (2016).
+  "Principal component analysis: a review and recent developments."
+  *Philosophical Transactions of the Royal Society A*,
+  374(2065), 20150202.
+  DOI: 10.1098/rsta.2015.0202
+
+### Numerical Implementation
+
+The PCA implementation uses symmetric eigendecomposition through
+`numpy.linalg.eigh`. This routine is appropriate for real symmetric matrices
+such as covariance and correlation matrices.
+
+- NumPy documentation: `numpy.linalg.eigh`
+  https://numpy.org/doc/stable/reference/generated/numpy.linalg.eigh.html
+
+
 ## Attribution Principle
 
 External ideas, datasets, software, documentation, and adapted

@@ -440,3 +440,306 @@ where \(w\) is the portfolio-weight vector.
 
 Thus, cross-asset dependence provides a direct mathematical bridge from
 exploratory analysis to portfolio optimization.
+---
+
+## 5. Covariance Matrix and Positive Semidefiniteness
+
+### Problem
+
+Correlation measures standardized dependence, but portfolio risk depends on both
+cross-asset dependence and the individual scales of asset returns. Therefore,
+the covariance matrix is required for later portfolio optimization.
+
+### Mathematical Formulation
+
+Let \(X \in \mathbb{R}^{T_R \times n}\) denote the log-return matrix, where
+\(T_R\) is the number of return observations and \(n\) is the number of assets.
+
+After centering each asset return series, let \(X_c\) denote the centered
+return matrix. The sample covariance matrix is
+
+$$
+\hat{\Sigma}
+=
+\frac{1}{T_R-1}X_c^\top X_c.
+$$
+
+The covariance matrix is symmetric:
+
+$$
+\hat{\Sigma}=\hat{\Sigma}^\top.
+$$
+
+For every vector \(x \in \mathbb{R}^n\),
+
+$$
+x^\top \hat{\Sigma}x
+=
+\frac{1}{T_R-1}\|X_cx\|_2^2
+\geq 0.
+$$
+
+Therefore, \(\hat{\Sigma}\) is positive semidefinite.
+
+For the current dataset, the minimum eigenvalue was numerically
+
+$$
+\lambda_{\min}(\hat{\Sigma})
+\approx 5.019\times10^{-6}>0,
+$$
+
+so the estimated covariance matrix is positive definite for this sample.
+
+If \(D\) is the diagonal matrix of sample standard deviations and \(C\) is the
+sample correlation matrix, then
+
+$$
+\hat{\Sigma}=DCD.
+$$
+
+The numerical reconstruction error in this identity was approximately
+
+$$
+5.421\times10^{-19},
+$$
+
+which is consistent with floating-point numerical precision.
+
+### Optimization Viewpoint
+
+For a portfolio-weight vector \(w\), portfolio variance is
+
+$$
+w^\top\hat{\Sigma}w.
+$$
+
+Because \(\hat{\Sigma}\) is positive semidefinite, this is a convex quadratic
+function of \(w\). This covariance structure will therefore become the risk
+term in the later portfolio-optimization stage.
+
+### Algorithmic Complexity
+
+For \(T_R\) return observations and \(n\) assets, constructing the covariance
+matrix requires approximately \(O(T_R n^2)\) arithmetic operations and
+\(O(n^2)\) storage.
+---
+
+## 6. Principal Component Analysis of Standardized Returns
+
+### Problem
+
+The eight asset-return series are correlated, so their movements contain
+redundant information. Principal Component Analysis (PCA) constructs
+orthogonal directions that summarize the dominant linear variation in the
+cross-asset return system.
+
+Because the assets have substantially different volatility scales, PCA is
+performed on standardized log returns rather than directly on the raw
+covariance matrix. This prevents a high-volatility asset from dominating a
+principal component solely because of its scale.
+
+### Standardization
+
+For asset \(i\) at time \(t\), define
+
+$$
+z_{t,i}
+=
+\frac{r_{t,i}-\bar{r}_i}{s_i},
+$$
+
+where \(\bar{r}_i\) is the sample mean and \(s_i\) is the sample standard
+deviation of asset \(i\).
+
+The resulting standardized-return matrix \(Z\) has approximately zero column
+means and unit sample standard deviations.
+
+Therefore,
+
+$$
+\operatorname{Cov}(Z)
+=
+\operatorname{Corr}(R),
+$$
+
+up to floating-point numerical precision.
+
+In the implementation, the maximum absolute difference between these two
+matrices was
+
+$$
+3.775\times10^{-15}.
+$$
+
+Thus, the PCA performed here can equivalently be interpreted as PCA on the
+sample correlation matrix.
+
+### Optimization Formulation
+
+Let \(C\) denote the covariance matrix of the standardized returns, which is
+equivalently the sample correlation matrix of the original returns.
+
+The first principal component direction solves
+
+$$
+\max_{v\in\mathbb{R}^n}
+\quad
+v^\top C v
+$$
+
+subject to
+
+$$
+v^\top v=1.
+$$
+
+This asks for the unit-length direction having maximum sample variance.
+
+The Lagrangian is
+
+$$
+\mathcal{L}(v,\lambda)
+=
+v^\top C v
+-
+\lambda(v^\top v-1).
+$$
+
+Differentiating with respect to \(v\) gives the first-order condition
+
+$$
+2Cv-2\lambda v=0,
+$$
+
+and therefore
+
+$$
+Cv=\lambda v.
+$$
+
+Hence, the principal-component directions are eigenvectors of \(C\), and the
+corresponding eigenvalues measure the variance captured along those
+directions.
+
+The first principal component corresponds to the largest eigenvalue.
+Subsequent components solve the same variance-maximization problem subject
+also to orthogonality with the previously selected component directions.
+
+### Explained Variance
+
+If
+
+$$
+\lambda_1\geq\lambda_2\geq\cdots\geq\lambda_n,
+$$
+
+then the explained-variance ratio of component \(k\) is
+
+$$
+\mathrm{EVR}_k
+=
+\frac{\lambda_k}
+{\sum_{j=1}^{n}\lambda_j}.
+$$
+
+For the current eight-asset dataset:
+
+- PC1 explains approximately \(50.53\%\) of standardized variance.
+- PC1--PC2 cumulatively explain approximately \(66.93\%\).
+- PC1--PC3 cumulatively explain approximately \(79.01\%\).
+
+Thus, three orthogonal directions summarize approximately \(79\%\) of the
+sample's standardized cross-asset variation.
+
+### Component-Weight Interpretation
+
+The first component has relatively large same-sign coefficients for SPY,
+QQQ, IWM, EEM, and VNQ. It therefore represents a broad equity/risk
+co-movement direction in this sample.
+
+The second component has its largest absolute coefficients in TLT and GLD,
+while the equity coefficients are comparatively small. It captures a
+different cross-asset direction dominated by bond and gold behavior.
+
+The third component is dominated by USO and, to a lesser extent, GLD,
+indicating a commodity-related direction in the sample.
+
+These interpretations are statistical rather than causal. PCA identifies
+directions of linear variation; it does not establish economic causation.
+
+The overall sign of an eigenvector is arbitrary: if \(v\) is an eigenvector,
+then \(-v\) represents the same principal-component direction. Therefore,
+interpretation focuses on relative signs and coefficient magnitudes rather
+than the absolute orientation of an eigenvector.
+
+### Numerical Validation
+
+The implementation validates that:
+
+- the eigenvectors are orthonormal;
+- the sum of the eigenvalues equals the trace of the PCA matrix;
+- the explained-variance ratios sum to one.
+
+Observed numerical errors were approximately
+
+$$
+\max |V^\top V-I|
+=
+6.661\times10^{-16},
+$$
+
+and
+
+$$
+\left|
+\sum_i\lambda_i-\operatorname{tr}(C)
+\right|
+=
+8.882\times10^{-16}.
+$$
+
+These values are consistent with floating-point numerical precision.
+
+### Algorithm
+
+The PCA implementation:
+
+1. standardizes each asset's log-return series;
+2. constructs the covariance matrix of the standardized returns;
+3. computes the symmetric eigendecomposition using `numpy.linalg.eigh`;
+4. sorts eigenvalues and eigenvectors in descending eigenvalue order;
+5. computes explained-variance ratios;
+6. validates orthogonality and trace preservation;
+7. extracts the first three component directions for interpretation and
+   visualization.
+
+### Computational Complexity
+
+Constructing the standardized covariance matrix requires approximately
+
+$$
+O(T_R n^2)
+$$
+
+operations.
+
+The eigendecomposition of the resulting symmetric \(n\times n\) matrix
+requires approximately
+
+$$
+O(n^3)
+$$
+
+operations, with \(O(n^2)\) matrix storage.
+
+For this project, \(n=8\), so the eigendecomposition is computationally small.
+The same formulation, however, makes the scaling behavior explicit for larger
+asset universes.
+
+### Predictive-Modeling Caveat
+
+The current PCA is descriptive and uses the full historical sample. If PCA is
+later used as part of a predictive model or backtest, the standardization
+parameters and PCA directions must be estimated using only information
+available at that historical time. Fitting them on future observations would
+introduce look-ahead bias.

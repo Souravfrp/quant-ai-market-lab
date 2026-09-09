@@ -40,21 +40,21 @@ Both simple and logarithmic returns are computed and numerically validated.
 
 For prices \(P_t\),
 
-\[
+$$
 R_t = \frac{P_t}{P_{t-1}} - 1,
-\]
+$$
 
 and
 
-\[
+$$
 r_t = \log\left(\frac{P_t}{P_{t-1}}\right).
-\]
+$$
 
 The implementation verifies the relationship
 
-\[
+$$
 r_t = \log(1+R_t)
-\]
+$$
 
 within numerical tolerance.
 
@@ -79,9 +79,9 @@ The sample covariance matrix of log returns is constructed and numerically check
 
 For a portfolio-weight vector \(w\), portfolio return variance is represented by
 
-\[
+$$
 \operatorname{Var}(r_p)=w^\top\Sigma w.
-\]
+$$
 
 This covariance structure will later support portfolio-risk optimization.
 
@@ -123,15 +123,15 @@ See:
 
 For example, covariance construction for \(T_R\) return observations and \(n\) assets scales approximately as
 
-\[
+$$
 O(T_R n^2),
-\]
+$$
 
 while a full dense eigendecomposition scales approximately as
 
-\[
+$$
 O(n^3).
-\]
+$$
 
 For the current eight-asset universe these computations are small, but the documentation discusses why algorithmic choices become more important as the asset universe grows.
 

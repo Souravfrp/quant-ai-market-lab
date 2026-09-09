@@ -38,7 +38,7 @@ The current historical sample covers 2015-01-01 through 2026-09-01.
 
 Both simple and logarithmic returns are computed and numerically validated.
 
-For prices \(P_t\),
+For prices $P_t$,
 
 $$
 R_t = \frac{P_t}{P_{t-1}} - 1,
@@ -77,10 +77,10 @@ Implemented analyses include:
 
 The sample covariance matrix of log returns is constructed and numerically checked for symmetry and positive semidefinite structure.
 
-For a portfolio-weight vector \(w\), portfolio return variance is represented by
+For a portfolio-weight vector $w$, portfolio return variance is represented by
 
 $$
-\operatorname{Var}(r_p)=w^\top\Sigma w.
+\mathrm{Var}(r_p)=w^\top\Sigma w.
 $$
 
 This covariance structure will later support portfolio-risk optimization.
@@ -121,7 +121,7 @@ See:
 
 `docs/mathematics_optimization_algorithms.md`
 
-For example, covariance construction for \(T_R\) return observations and \(n\) assets scales approximately as
+For example, covariance construction for $T_R$ return observations and $n$ assets scales approximately as
 
 $$
 O(T_R n^2),

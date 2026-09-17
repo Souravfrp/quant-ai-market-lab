@@ -1590,6 +1590,92 @@ sophisticated. They should be compared against the KMeans baseline using
 consistent historical information and clearly defined diagnostics.
 
 
+
+### 3-D Geometry and the KMeans Decision Boundary
+
+The regime feature vector has three coordinates,
+
+$$
+x_t =
+\begin{pmatrix}
+r_{\mathrm{SPY},t} \\
+\sigma_{\mathrm{SPY},t}^{(20)} \\
+d_t
+\end{pmatrix}.
+$$
+
+Therefore, each trading date can be viewed geometrically as one point in a
+three-dimensional feature space.
+
+The three coordinates have different numerical scales. KMeans is therefore
+not fitted directly to the original financial coordinates. Each feature is
+standardized using historical-sample statistics,
+
+$$
+z_{t,j}
+=
+\frac{x_{t,j}-\mu_j}{s_j},
+$$
+
+where $\mu_j$ and $s_j$ are respectively the fitted mean and scale of feature
+$j$.
+
+Standardization changes the coordinate system but not the identity of an
+observation. The original-coordinate and standardized-coordinate panels in
+the 3-D comparison figure therefore show the same trading dates and the same
+final cluster assignments.
+
+This distinction matters because KMeans minimizes squared Euclidean distances
+in the standardized feature space. Consequently, the standardized panel
+shows the geometry that is directly relevant to the clustering objective.
+
+For the $K=2$ baseline, let the standardized centroids be $c_0$ and $c_1$.
+A point $z$ lies on the KMeans decision boundary when it is equally distant
+from the two centroids,
+
+$$
+\|z-c_0\|_2^2
+=
+\|z-c_1\|_2^2.
+$$
+
+Expanding both sides gives
+
+$$
+z^\top z
+-2c_0^\top z
++\|c_0\|_2^2
+=
+z^\top z
+-2c_1^\top z
++\|c_1\|_2^2.
+$$
+
+The common $z^\top z$ terms cancel, leaving
+
+$$
+2(c_1-c_0)^\top z
+=
+\|c_1\|_2^2-\|c_0\|_2^2.
+$$
+
+This is the equation of a plane in three dimensions. Geometrically, it is
+the perpendicular-bisector plane separating the two KMeans Voronoi regions.
+
+The 3-D comparison figure displays this plane only in standardized
+coordinates because that is the space in which the KMeans distance
+calculation is performed.
+
+For readability, the plotted axes use the 1st-99th percentile range of each
+feature. This is only a visualization choice. KMeans is fitted using all
+2,828 historical feature observations, including observations outside the
+displayed axis limits. In the current figure, 138 observations fall outside
+at least one displayed axis limit; they are not removed from model fitting.
+
+The centroid coordinates are also written directly on the figure. This makes
+it possible to compare both their financial interpretation in the original
+coordinates and their geometric position in standardized coordinates.
+
 ### Motivation for the Next Experiment
 
 The KMeans result creates a specific next research question:

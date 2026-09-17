@@ -59,6 +59,52 @@ such as covariance and correlation matrices.
   https://numpy.org/doc/stable/reference/generated/numpy.linalg.eigh.html
 
 
+## Market-Regime Baseline: Standardization and KMeans
+
+### Feature Standardization
+
+The regime-feature matrix is standardized before Euclidean-distance-based
+KMeans clustering so that differences in numerical scale do not cause one
+feature to dominate the distance calculation.
+
+The implementation uses `sklearn.preprocessing.StandardScaler`.
+
+- scikit-learn documentation: `StandardScaler`
+  https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html
+
+### KMeans Clustering
+
+KMeans is used as a geometric baseline for partitioning the standardized
+market-condition feature space. The project does not assume that the
+resulting clusters are automatically genuine or persistent market regimes.
+
+The implementation uses `sklearn.cluster.KMeans` with `k-means++`
+initialization, multiple initializations, and a fixed random state for
+reproducibility.
+
+- scikit-learn documentation: `KMeans`
+  https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html
+
+The initialization strategy is based on:
+
+- Arthur, D., and Vassilvitskii, S. (2007).
+  "k-means++: The Advantages of Careful Seeding."
+  Proceedings of the Eighteenth Annual ACM-SIAM Symposium on Discrete
+  Algorithms (SODA), pp. 1027-1035.
+
+### Cluster Diagnostics
+
+Candidate cluster counts are compared using the silhouette score.
+Initialization stability of the selected baseline partition is checked
+using the Adjusted Rand Index (ARI).
+
+- scikit-learn documentation: `silhouette_score`
+  https://scikit-learn.org/stable/modules/generated/sklearn.metrics.silhouette_score.html
+
+- scikit-learn documentation: `adjusted_rand_score`
+  https://scikit-learn.org/stable/modules/generated/sklearn.metrics.adjusted_rand_score.html
+
+
 ## Attribution Principle
 
 External ideas, datasets, software, documentation, and adapted

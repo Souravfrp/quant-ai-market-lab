@@ -7,6 +7,7 @@ cross-asset universe used in the quantitative analysis pipeline.
 
 from pathlib import Path
 
+import numpy as np
 import yfinance as yf
 
 
@@ -30,6 +31,44 @@ RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw"
 
 START_DATE = "2015-01-01"
 END_DATE = "2026-09-01"
+
+def validate_adjusted_prices(adjusted_prices):
+    """
+    Validate adjusted-price data before saving it.
+
+    The downstream return calculation requires a clean,
+    chronologically ordered matrix of finite positive prices.
+    """
+    if adjusted_prices.empty:
+        raise RuntimeError("Adjusted-price dataset is empty.")
+
+    if adjusted_prices.index.duplicated().any():
+        raise RuntimeError("Adjusted-price dataset contains duplicate dates.")
+
+    if not adjusted_prices.index.is_monotonic_increasing:
+        raise RuntimeError(
+            "Adjusted-price dates are not in chronological order."
+        )
+
+    if adjusted_prices.isna().any().any():
+        raise RuntimeError(
+            "Adjusted-price dataset contains missing values."
+        )
+
+    values = adjusted_prices.to_numpy()
+
+    if not np.isfinite(values).all():
+        raise RuntimeError(
+            "Adjusted-price dataset contains non-finite values."
+        )
+
+    if (values <= 0).any():
+        raise RuntimeError(
+            "Adjusted-price dataset contains non-positive prices."
+        )
+
+    print("Adjusted-price validation passed.")
+
 
 
 def download_adjusted_prices():
@@ -67,7 +106,7 @@ def download_adjusted_prices():
         raise RuntimeError(
             f"Missing adjusted-price data for: {missing_assets}"
         )
-
+    validate_adjusted_prices(adjusted_prices)
     output_path = RAW_DATA_DIR / "adjusted_close.csv"
     adjusted_prices.to_csv(output_path)
 

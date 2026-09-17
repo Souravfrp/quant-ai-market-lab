@@ -5,6 +5,9 @@ This module treats KMeans as a geometric baseline rather than assuming
 that its clusters are genuine persistent market regimes.
 """
 
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
@@ -24,6 +27,9 @@ BASELINE_CLUSTERS = 2
 N_INIT = 20
 RANDOM_STATE = 42
 
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+RESULTS_DIR = PROJECT_ROOT / "results"
 
 def standardize_features(features):
     """
@@ -94,6 +100,125 @@ def fit_baseline_kmeans(scaled_features):
     labels = model.fit_predict(scaled_features)
 
     return model, labels
+
+def plot_cluster_geometry(features, labels, centroids):
+    """
+    Visualize the KMeans partition in the original feature coordinates.
+
+    Points are colored by cluster assignment and cluster centroids are
+    marked separately. These plots are diagnostic views of the KMeans
+    partition, not evidence that the clusters are true market regimes.
+    """
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    centroid_frame = pd.DataFrame(
+        centroids,
+        columns=features.columns,
+    )
+
+    pairs = [
+        (
+            "spy_return",
+            "spy_volatility_20d",
+            "SPY Return vs 20-Day Volatility",
+            "kmeans_return_vs_volatility.png",
+        ),
+        (
+            "spy_return",
+            "cross_asset_dispersion",
+            "SPY Return vs Cross-Asset Dispersion",
+            "kmeans_return_vs_dispersion.png",
+        ),
+        (
+            "spy_volatility_20d",
+            "cross_asset_dispersion",
+            "20-Day Volatility vs Cross-Asset Dispersion",
+            "kmeans_volatility_vs_dispersion.png",
+        ),
+    ]
+
+    for x_column, y_column, title, filename in pairs:
+        plt.figure(figsize=(8, 6))
+
+        for cluster in range(BASELINE_CLUSTERS):
+            cluster_mask = labels == cluster
+
+            plt.scatter(
+                features.loc[cluster_mask, x_column],
+                features.loc[cluster_mask, y_column],
+                alpha=0.45,
+                s=16,
+                label=f"Cluster {cluster}",
+            )
+
+        plt.scatter(
+            centroid_frame[x_column],
+            centroid_frame[y_column],
+            marker="X",
+            s=180,
+            edgecolors="black",
+            linewidths=1.2,
+            label="KMeans centroids",
+        )
+
+        plt.xlabel(x_column.replace("_", " ").title())
+        plt.ylabel(y_column.replace("_", " ").title())
+        plt.title(f"KMeans Baseline: {title}")
+        plt.legend()
+        plt.grid(alpha=0.25)
+        plt.tight_layout()
+
+        output_path = RESULTS_DIR / filename
+        plt.savefig(output_path, dpi=160)
+        plt.close()
+
+        print("Saved:", output_path)
+
+def plot_cluster_timeline(labels, index):
+    """
+    Plot KMeans cluster assignments through historical time.
+
+    This is a post-clustering temporal diagnostic. KMeans itself does not
+    use chronological ordering when assigning observations to clusters.
+    """
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    regimes = pd.Series(
+        labels,
+        index=index,
+        name="cluster",
+    )
+
+    plt.figure(figsize=(12, 3))
+
+    for cluster in range(BASELINE_CLUSTERS):
+        cluster_mask = regimes == cluster
+
+        plt.scatter(
+            regimes.index[cluster_mask],
+            regimes.loc[cluster_mask],
+            s=10,
+            alpha=0.7,
+            label=f"Cluster {cluster}",
+        )
+
+    plt.yticks(
+        range(BASELINE_CLUSTERS),
+        [f"Cluster {k}" for k in range(BASELINE_CLUSTERS)],
+    )
+    plt.xlabel("Date")
+    plt.ylabel("KMeans cluster")
+    plt.title("KMeans Baseline Cluster Assignments Through Time")
+    plt.legend()
+    plt.grid(axis="x", alpha=0.25)
+    plt.tight_layout()
+
+    output_path = RESULTS_DIR / "kmeans_cluster_timeline.png"
+    plt.savefig(output_path, dpi=160)
+    plt.close()
+
+    print("Saved:", output_path)
+
 
 def temporal_diagnostics(labels, index):
     """
@@ -215,6 +340,17 @@ if __name__ == "__main__":
 
     centroids = scaler.inverse_transform(
         model.cluster_centers_
+    )
+
+    plot_cluster_geometry(
+        features,
+        labels,
+        centroids,
+    )
+
+    plot_cluster_timeline(
+        labels,
+        features.index,
     )
 
     print("\nK=2 baseline centroids")

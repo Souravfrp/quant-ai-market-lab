@@ -172,6 +172,14 @@ The smaller cluster has, on average, more negative SPY returns, higher recent SP
 
 The plot colors identify Cluster 0 and Cluster 1, while the `X` markers identify the KMeans centroids.
 
+### 3-D Geometric Comparison
+
+The same KMeans assignments can also be viewed simultaneously in the original financial coordinates and in the standardized coordinates used during model fitting.
+
+![KMeans Original vs Standardized 3D Geometry](results/kmeans_3d_comparison.png)
+
+The left panel preserves the original financial units. The right panel shows the standardized feature space in which KMeans computes Euclidean distances and includes the equal-distance decision plane between the two centroids. Axis limits use the 1st-99th percentile range for visualization only; all 2,828 historical observations remain part of model fitting.
+
 ### Temporal Diagnostics
 
 KMeans uses feature-space geometry but does not use chronological dependence while fitting. The cluster assignments were therefore examined afterward through time.

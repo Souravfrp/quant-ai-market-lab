@@ -11,7 +11,7 @@ implementation.
 
 ## 1. Market Data Representation
 
-Let there be \(n\) assets observed over \(T_P\) trading dates, where \(T_P\)
+Let there be $n$ assets observed over $T_P$ trading dates, where $T_P$
 denotes the number of price observations.
 The adjusted-price data are represented as a matrix
 
@@ -58,7 +58,7 @@ $$
 
 ### Algorithmic viewpoint
 
-If \(n\) assets are requested, checking whether every requested asset is
+If $n$ assets are requested, checking whether every requested asset is
 present requires a scan over the asset universe.
 
 At the asset level, this validation is approximately
@@ -95,7 +95,7 @@ which will subsequently appear in convex portfolio-optimization problems.
 Financial price levels are transformed into returns before statistical
 modeling.
 
-For asset \(i\), the one-period simple return is
+For asset $i$, the one-period simple return is
 
 $$
 R_{i,t}
@@ -149,8 +149,8 @@ r_{n,t}
 \in \mathbb{R}^{n}.
 $$
 
-The validated price dataset contains \(T_P=2932\) price observations for
-\(n=8\) assets. Because a one-period return requires both a current and previous price, define the number of return observations as
+The validated price dataset contains $T_P=2932$ price observations for
+$n=8$ assets. Because a one-period return requires both a current and previous price, define the number of return observations as
 
 $$
 T_R = T_P - 1 = 2931.
@@ -195,7 +195,7 @@ The observed calculation satisfies this condition.
 Computing returns requires processing each observation for every asset.
 
 
-For \(T_P\) price observations and \(n\) assets, the computational work is approximately
+For $T_P$ price observations and $n$ assets, the computational work is approximately
 
 $$
 O(T_P n).
@@ -237,7 +237,7 @@ $$
 w^\top \hat{\Sigma} w,
 $$
 
-where \(w\) denotes the vector of portfolio weights.
+where $w$ denotes the vector of portfolio weights.
 
 ## 3. Historical Volatility Estimation
 
@@ -246,13 +246,13 @@ where \(w\) denotes the vector of portfolio weights.
 For each asset, estimate the historical variability of daily log returns
 and express that risk measure on an annualized scale.
 
-Let \(r_{i,t}\) denote the daily log return of asset \(i\) on return
-observation \(t\), with \(T_R = 2931\) return observations in the current
+Let $r_{i,t}$ denote the daily log return of asset $i$ on return
+observation $t$, with $T_R = 2931$ return observations in the current
 dataset.
 
 ### Mathematical formulation
 
-The sample mean return of asset \(i\) is
+The sample mean return of asset $i$ is
 
 $$
 \bar{r}_i
@@ -289,9 +289,9 @@ identically distributed.
 
 ### Algorithmic viewpoint
 
-For \(n\) assets and \(T_R\) return observations, computing the sample
+For $n$ assets and $T_R$ return observations, computing the sample
 standard deviation for every asset requires processing the return matrix
-and has time complexity \(O(T_R n)\).
+and has time complexity $O(T_R n)$.
 
 ### Optimization viewpoint
 
@@ -314,12 +314,12 @@ Individual asset volatility describes the variability of each return
 series separately, but portfolio risk also depends on how different
 assets move together.
 
-For the current universe of \(n=8\) assets, pairwise dependence is
+For the current universe of $n=8$ assets, pairwise dependence is
 measured using the Pearson correlation coefficient.
 
 ### Mathematical formulation
 
-For assets \(i\) and \(j\), the sample correlation is
+For assets $i$ and $j$, the sample correlation is
 
 $$
 \rho_{ij}
@@ -328,7 +328,7 @@ $$
 {s_i s_j},
 $$
 
-where \(s_i\) and \(s_j\) are the sample standard deviations of the
+where $s_i$ and $s_j$ are the sample standard deviations of the
 corresponding daily log-return series.
 
 The complete correlation matrix is
@@ -369,7 +369,7 @@ $$
 
 ### Numerical validation
 
-The computed matrix has shape \(8\times8\).
+The computed matrix has shape $8\times8$.
 
 The maximum observed symmetry error was
 
@@ -379,13 +379,13 @@ $$
 
 and the maximum diagonal error was also zero.
 
-The observed correlation values ranged from approximately \(-0.203\)
-to \(1.000\), including the unit diagonal.
+The observed correlation values ranged from approximately $-0.203$
+to $1.000$, including the unit diagonal.
 
 ### Algorithmic viewpoint
 
 Computing all pairwise correlations requires estimating relationships
-between approximately \(n^2\) pairs of assets across \(T_R\) return
+between approximately $n^2$ pairs of assets across $T_R$ return
 observations.
 
 The resulting time complexity is approximately
@@ -405,7 +405,7 @@ storage.
 ### Financial interpretation
 
 The strongest observed correlation between two distinct assets is
-approximately \(0.932\) between SPY and QQQ, indicating strong historical
+approximately $0.932$ between SPY and QQQ, indicating strong historical
 linear co-movement in their daily returns.
 
 TLT exhibits mildly negative correlations with several equity exposures,
@@ -424,7 +424,7 @@ The correlation analysis is descriptive and does not itself solve an
 optimization problem.
 
 However, correlations are closely related to the covariance matrix.
-If \(D\) is the diagonal matrix of asset standard deviations, then
+If $D$ is the diagonal matrix of asset standard deviations, then
 
 $$
 \Sigma = D C D.
@@ -438,7 +438,7 @@ $$
 w^\top \Sigma w,
 $$
 
-where \(w\) is the portfolio-weight vector.
+where $w$ is the portfolio-weight vector.
 
 Thus, cross-asset dependence provides a direct mathematical bridge from
 exploratory analysis to portfolio optimization.
@@ -454,10 +454,10 @@ the covariance matrix is required for later portfolio optimization.
 
 ### Mathematical Formulation
 
-Let \(X \in \mathbb{R}^{T_R \times n}\) denote the log-return matrix, where
-\(T_R\) is the number of return observations and \(n\) is the number of assets.
+Let $X \in \mathbb{R}^{T_R \times n}$ denote the log-return matrix, where
+$T_R$ is the number of return observations and $n$ is the number of assets.
 
-After centering each asset return series, let \(X_c\) denote the centered
+After centering each asset return series, let $X_c$ denote the centered
 return matrix. The sample covariance matrix is
 
 $$
@@ -472,7 +472,7 @@ $$
 \hat{\Sigma}=\hat{\Sigma}^\top.
 $$
 
-For every vector \(x \in \mathbb{R}^n\),
+For every vector $x \in \mathbb{R}^n$,
 
 $$
 x^\top \hat{\Sigma}x
@@ -481,7 +481,7 @@ x^\top \hat{\Sigma}x
 \geq 0.
 $$
 
-Therefore, \(\hat{\Sigma}\) is positive semidefinite.
+Therefore, $\hat{\Sigma}$ is positive semidefinite.
 
 For the current dataset, the minimum eigenvalue was numerically
 
@@ -492,7 +492,7 @@ $$
 
 so the estimated covariance matrix is positive definite for this sample.
 
-If \(D\) is the diagonal matrix of sample standard deviations and \(C\) is the
+If $D$ is the diagonal matrix of sample standard deviations and $C$ is the
 sample correlation matrix, then
 
 $$
@@ -509,21 +509,21 @@ which is consistent with floating-point numerical precision.
 
 ### Optimization Viewpoint
 
-For a portfolio-weight vector \(w\), portfolio variance is
+For a portfolio-weight vector $w$, portfolio variance is
 
 $$
 w^\top\hat{\Sigma}w.
 $$
 
-Because \(\hat{\Sigma}\) is positive semidefinite, this is a convex quadratic
-function of \(w\). This covariance structure will therefore become the risk
+Because $\hat{\Sigma}$ is positive semidefinite, this is a convex quadratic
+function of $w$. This covariance structure will therefore become the risk
 term in the later portfolio-optimization stage.
 
 ### Algorithmic Complexity
 
-For \(T_R\) return observations and \(n\) assets, constructing the covariance
-matrix requires approximately \(O(T_R n^2)\) arithmetic operations and
-\(O(n^2)\) storage.
+For $T_R$ return observations and $n$ assets, constructing the covariance
+matrix requires approximately $O(T_R n^2)$ arithmetic operations and
+$O(n^2)$ storage.
 ---
 
 ## 6. Principal Component Analysis of Standardized Returns
@@ -542,7 +542,7 @@ principal component solely because of its scale.
 
 ### Standardization
 
-For asset \(i\) at time \(t\), define
+For asset $i$ at time $t$, define
 
 $$
 z_{t,i}
@@ -550,10 +550,10 @@ z_{t,i}
 \frac{r_{t,i}-\bar{r}_i}{s_i},
 $$
 
-where \(\bar{r}_i\) is the sample mean and \(s_i\) is the sample standard
-deviation of asset \(i\).
+where $\bar{r}_i$ is the sample mean and $s_i$ is the sample standard
+deviation of asset $i$.
 
-The resulting standardized-return matrix \(Z\) has approximately zero column
+The resulting standardized-return matrix $Z$ has approximately zero column
 means and unit sample standard deviations.
 
 Therefore,
@@ -578,7 +578,7 @@ sample correlation matrix.
 
 ### Optimization Formulation
 
-Let \(C\) denote the covariance matrix of the standardized returns, which is
+Let $C$ denote the covariance matrix of the standardized returns, which is
 equivalently the sample correlation matrix of the original returns.
 
 The first principal component direction solves
@@ -607,7 +607,7 @@ v^\top C v
 \lambda(v^\top v-1).
 $$
 
-Differentiating with respect to \(v\) gives the first-order condition
+Differentiating with respect to $v$ gives the first-order condition
 
 $$
 2Cv-2\lambda v=0,
@@ -619,7 +619,7 @@ $$
 Cv=\lambda v.
 $$
 
-Hence, the principal-component directions are eigenvectors of \(C\), and the
+Hence, the principal-component directions are eigenvectors of $C$, and the
 corresponding eigenvalues measure the variance captured along those
 directions.
 
@@ -635,7 +635,7 @@ $$
 \lambda_1\geq\lambda_2\geq\cdots\geq\lambda_n,
 $$
 
-then the explained-variance ratio of component \(k\) is
+then the explained-variance ratio of component $k$ is
 
 $$
 \mathrm{EVR}_k
@@ -646,11 +646,11 @@ $$
 
 For the current eight-asset dataset:
 
-- PC1 explains approximately \(50.53\%\) of standardized variance.
-- PC1--PC2 cumulatively explain approximately \(66.93\%\).
-- PC1--PC3 cumulatively explain approximately \(79.01\%\).
+- PC1 explains approximately $50.53\%$ of standardized variance.
+- PC1--PC2 cumulatively explain approximately $66.93\%$.
+- PC1--PC3 cumulatively explain approximately $79.01\%$.
 
-Thus, three orthogonal directions summarize approximately \(79\%\) of the
+Thus, three orthogonal directions summarize approximately $79\%$ of the
 sample's standardized cross-asset variation.
 
 ### Component-Weight Interpretation
@@ -669,8 +669,8 @@ indicating a commodity-related direction in the sample.
 These interpretations are statistical rather than causal. PCA identifies
 directions of linear variation; it does not establish economic causation.
 
-The overall sign of an eigenvector is arbitrary: if \(v\) is an eigenvector,
-then \(-v\) represents the same principal-component direction. Therefore,
+The overall sign of an eigenvector is arbitrary: if $v$ is an eigenvector,
+then $-v$ represents the same principal-component direction. Therefore,
 interpretation focuses on relative signs and coefficient magnitudes rather
 than the absolute orientation of an eigenvector.
 
@@ -725,16 +725,16 @@ $$
 
 operations.
 
-The eigendecomposition of the resulting symmetric \(n\times n\) matrix
+The eigendecomposition of the resulting symmetric $n\times n$ matrix
 requires approximately
 
 $$
 O(n^3)
 $$
 
-operations, with \(O(n^2)\) matrix storage.
+operations, with $O(n^2)$ matrix storage.
 
-For this project, \(n=8\), so the eigendecomposition is computationally small.
+For this project, $n=8$, so the eigendecomposition is computationally small.
 The same formulation, however, makes the scaling behavior explicit for larger
 asset universes.
 
@@ -742,7 +742,7 @@ asset universes.
 
 ### Scalability and Computational Perspective
 
-For the current universe of only \(n=8\) assets, the direct covariance and
+For the current universe of only $n=8$ assets, the direct covariance and
 eigendecomposition approach is entirely appropriate. Introducing a more
 complicated algorithm here would add unnecessary implementation complexity
 without a meaningful computational benefit.
@@ -761,10 +761,10 @@ O(n^3).
 $$
 
 Thus, increasing the number of assets can make both computation and
-\(O(n^2)\) matrix storage significantly more expensive.
+$O(n^2)$ matrix storage significantly more expensive.
 
-If only the leading \(k\) principal components are required, with
-\(k \ll n\), computing the complete eigendecomposition may perform more work
+If only the leading $k$ principal components are required, with
+$k \ll n$, computing the complete eigendecomposition may perform more work
 than necessary. For sufficiently large problems, iterative or truncated
 methods can target only the dominant components rather than computing every
 eigenpair.
@@ -800,7 +800,7 @@ I do not begin by assuming that a particular clustering method will discover
 genuine economic regimes. The first step is instead to construct a small set of
 interpretable variables that describe different aspects of market behavior.
 
-For each trading day \(t\), I represent the market condition by the feature
+For each trading day $t$, I represent the market condition by the feature
 vector
 
 $$
@@ -878,7 +878,7 @@ historical experiment.
 
 The second coordinate measures the recent variability of SPY returns.
 
-For a window of \(w=20\) trading days,
+For a window of $w=20$ trading days,
 
 $$
 \sigma_{\mathrm{SPY},t}^{(20)}
@@ -904,8 +904,8 @@ $$
 r_{\mathrm{SPY},t-j}.
 $$
 
-The window is backward-looking: the feature at time \(t\) uses observations
-from \(t-19\) through \(t\), and therefore does not use future returns.
+The window is backward-looking: the feature at time $t$ uses observations
+from $t-19$ through $t$, and therefore does not use future returns.
 
 The first 19 observations cannot have a complete 20-day window. They are
 therefore unavailable by construction rather than being treated as data
@@ -924,7 +924,7 @@ rather than chosen because they produce visually cleaner regimes.
 The third coordinate measures how differently the eight ETF returns behave on
 the same trading day.
 
-For \(n=8\) assets, first define the cross-sectional mean return
+For $n=8$ assets, first define the cross-sectional mean return
 
 $$
 \bar r_t
@@ -975,9 +975,9 @@ $$
 \bar r_t\mathbf{1}
 $$
 
-is the orthogonal projection of \(r_t\) onto \(L\).
+is the orthogonal projection of $r_t$ onto $L$.
 
-From the definition of \(d_t\),
+From the definition of $d_t$,
 
 $$
 \left\|
@@ -998,7 +998,7 @@ r_t-\bar r_t\mathbf{1}
 \right\|_2.
 $$
 
-For the current universe of \(n=8\) ETFs,
+For the current universe of $n=8$ ETFs,
 
 $$
 \left\|
@@ -1019,11 +1019,11 @@ co-movement between return series over multiple observations.
 ### Causality and Timing of the Features
 
 All three baseline features are constructed using information available no
-later than trading day \(t\). No observation from \(t+1\) or later is required.
+later than trading day $t$. No observation from $t+1$ or later is required.
 
 The interpretation nevertheless depends on when the model is intended to be
-used. Because the day-\(t\) return and dispersion are known only after the
-relevant day-\(t\) prices are observed, these features describe the market
+used. Because the day-$t$ return and dispersion are known only after the
+relevant day-$t$ prices are observed, these features describe the market
 condition at or after that observation time. They can subsequently be used as
 inputs for a next-period forecasting experiment, provided the temporal
 ordering is preserved.
@@ -1036,7 +1036,7 @@ KMeans is based on Euclidean distances between observations and cluster
 centroids. Therefore, the numerical scale of each coordinate directly affects
 the geometry seen by the algorithm.
 
-For two feature vectors \(x\) and \(y\),
+For two feature vectors $x$ and $y$,
 
 $$
 \|x-y\|_2^2
@@ -1057,7 +1057,7 @@ z_{t,j}
 \frac{x_{t,j}-\mu_j}{s_j},
 $$
 
-where \(\mu_j\) is the historical mean of feature \(j\), and \(s_j\) is its
+where $\mu_j$ is the historical mean of feature $j$, and $s_j$ is its
 historical standard deviation.
 
 After standardization, each coordinate is centered near zero and has unit
@@ -1078,7 +1078,7 @@ not make the features statistically independent and it does not remove their
 correlations.
 
 For example, the historical 20-day SPY volatility and cross-asset dispersion
-have a positive sample correlation of approximately \(0.529\). Standardizing
+have a positive sample correlation of approximately $0.529$. Standardizing
 the two variables changes their units but does not remove this relationship.
 
 
@@ -1149,8 +1149,8 @@ $$
 z_t \in \mathbb{R}^3.
 $$
 
-For a chosen number of clusters \(K\), KMeans seeks cluster assignments
-\(C_1,\ldots,C_K\) and centroids \(\mu_1,\ldots,\mu_K\) that minimize the
+For a chosen number of clusters $K$, KMeans seeks cluster assignments
+$C_1,\ldots,C_K$ and centroids $\mu_1,\ldots,\mu_K$ that minimize the
 within-cluster sum of squared Euclidean distances:
 
 $$
@@ -1196,7 +1196,7 @@ $$
 z_1,\ldots,z_m.
 $$
 
-For fixed cluster membership, KMeans chooses the centroid \(\mu\) by minimizing
+For fixed cluster membership, KMeans chooses the centroid $\mu$ by minimizing
 
 $$
 f(\mu)
@@ -1204,7 +1204,7 @@ f(\mu)
 \sum_{i=1}^{m}\|z_i-\mu\|_2^2.
 $$
 
-Differentiating with respect to \(\mu\),
+Differentiating with respect to $\mu$,
 
 $$
 \nabla_\mu f(\mu)
@@ -1280,10 +1280,10 @@ across several different random seeds.
 
 Let
 
-- \(N\) be the number of observations,
-- \(K\) the number of clusters,
-- \(d\) the feature dimension,
-- \(I\) the number of KMeans iterations.
+- $N$ be the number of observations,
+- $K$ the number of clusters,
+- $d$ the feature dimension,
+- $I$ the number of KMeans iterations.
 
 A standard assignment step computes distances from approximately every
 observation to every centroid, requiring roughly
@@ -1294,7 +1294,7 @@ $$
 
 operations per iteration.
 
-Over \(I\) iterations, one run therefore has approximate complexity
+Over $I$ iterations, one run therefore has approximate complexity
 
 $$
 O(NKdI).
@@ -1309,7 +1309,7 @@ $$
 N=2828,\qquad d=3,
 $$
 
-and only small candidate values of \(K\) are considered. The computational
+and only small candidate values of $K$ are considered. The computational
 cost is therefore small. The complexity becomes more relevant for much larger
 datasets, higher-dimensional feature spaces, or large numbers of repeated
 initializations.
@@ -1353,14 +1353,14 @@ As the number of clusters increases, inertia cannot increase, because a model
 with more centroids has at least as much flexibility as a model with fewer
 centroids.
 
-Therefore, choosing the value of \(K\) with the smallest inertia would
-automatically favor larger values of \(K\). Inertia must instead be interpreted
+Therefore, choosing the value of $K$ with the smallest inertia would
+automatically favor larger values of $K$. Inertia must instead be interpreted
 together with other diagnostics and the structure of the resulting clusters.
 
 
 ### Silhouette Score
 
-For an observation \(i\), let
+For an observation $i$, let
 
 $$
 a(i)
@@ -1372,7 +1372,7 @@ $$
 b(i)
 $$
 
-be the smallest average distance from \(i\) to observations in another
+be the smallest average distance from $i$ to observations in another
 cluster.
 
 The silhouette value is
@@ -1384,14 +1384,14 @@ s(i)
 {\max\{a(i),b(i)\}}.
 $$
 
-Its value lies between \(-1\) and \(1\).
+Its value lies between $-1$ and $1$.
 
-Values closer to \(1\) indicate that an observation is relatively well
+Values closer to $1$ indicate that an observation is relatively well
 separated from neighboring clusters. Values near zero indicate overlap near a
 cluster boundary, while negative values can indicate that an observation may
 be closer, on average, to another cluster.
 
-The overall silhouette score is the average of \(s(i)\) across observations.
+The overall silhouette score is the average of $s(i)$ across observations.
 
 A high silhouette score is evidence of geometric separation under the chosen
 distance and feature representation. It is not proof that the clusters are
@@ -1420,15 +1420,15 @@ The observed diagnostics were:
 | 7 | 2757.822 | 0.3027 | 171, 1398, 289, 557, 21, 382, 10 |
 | 8 | 2526.448 | 0.2921 | 510, 154, 1227, 20, 248, 10, 542, 117 |
 
-Among these candidate values, \(K=2\) produced the largest silhouette score.
+Among these candidate values, $K=2$ produced the largest silhouette score.
 
-For larger values of \(K\), several very small clusters appeared. Together
+For larger values of $K$, several very small clusters appeared. Together
 with the previously inspected feature-space geometry, this suggests that some
 additional centroids may be isolating relatively unusual tail observations
 rather than revealing a large number of clearly separated, persistent market
 states.
 
-For this reason, \(K=2\) is retained as a baseline partition for further
+For this reason, $K=2$ is retained as a baseline partition for further
 diagnostics. This is not a claim that the market has exactly two true regimes.
 
 
@@ -1456,7 +1456,7 @@ hard-code semantic regime names into the algorithm.
 
 ### Initialization Stability and Adjusted Rand Index
 
-Because KMeans is sensitive to initialization, I repeated the \(K=2\)
+Because KMeans is sensitive to initialization, I repeated the $K=2$
 experiment across several random seeds.
 
 To compare two partitions while ignoring arbitrary permutations of the cluster
@@ -1475,7 +1475,7 @@ $$
 means that the two partitions are identical up to a permutation of cluster
 labels.
 
-Across the tested seeds, almost all solutions had ARI equal to \(1\) relative
+Across the tested seeds, almost all solutions had ARI equal to $1$ relative
 to the reference solution. One seed produced
 
 $$
@@ -1484,7 +1484,7 @@ $$
 
 with only a very small difference in the partition.
 
-Therefore, the observed \(K=2\) partition is highly stable with respect to the
+Therefore, the observed $K=2$ partition is highly stable with respect to the
 tested KMeans initializations.
 
 This stability addresses one computational concern, but it does not establish
@@ -1514,7 +1514,7 @@ $$
 {\sum_j N_{ij}}.
 $$
 
-For the \(K=2\) baseline, the transition matrix was approximately
+For the $K=2$ baseline, the transition matrix was approximately
 
 $$
 \widehat P
@@ -1540,7 +1540,7 @@ The run-length diagnostics were:
 | 1 | 175 | 14.394 | 3 | 295 |
 
 Cluster 1 is relatively persistent, with an estimated self-transition
-probability of approximately \(0.931\).
+probability of approximately $0.931$.
 
 Cluster 0 is substantially less persistent. Its median run length is only one
 trading day, even though a few longer episodes occur.

@@ -2,7 +2,7 @@
 
 An ongoing quantitative research project exploring cross-asset market data through statistical analysis, numerical linear algebra, and reproducible computational methods, with planned extensions to machine learning and portfolio optimization.
 
-> **Project Status:** Active development. The current repository contains the completed data, return-analysis, covariance, correlation, and Principal Component Analysis (PCA) stages. Regime modeling, predictive modeling, portfolio optimization, backtesting, explainability, and an interactive application are planned extensions.
+> **Project Status:** Active development. Completed stages currently include validated market-data ingestion, return analysis, volatility and dependence analysis, covariance estimation, Principal Component Analysis (PCA), a fixed-cutoff temporal research split, market-regime feature construction, and a validated KMeans regime baseline. Temporal latent-state modeling, predictive risk modeling, portfolio optimization, backtesting, explainability, and an interactive application remain planned extensions.
 
 ## Motivation
 
@@ -23,7 +23,7 @@ The analysis currently uses eight exchange-traded funds (ETFs) representing diff
 - EEM — emerging-market equities
 - VNQ — U.S. real estate
 
-The current historical sample covers 2015-01-01 through 2026-09-01.
+The data-ingestion configuration requests observations from `2015-01-01` through `2026-09-01`. The validated dataset currently contains observed trading dates from `2015-01-02` through `2026-08-31`.
 
 ## Completed Work
 
@@ -103,6 +103,87 @@ The implementation validates eigenvector orthogonality, eigenvalue/trace consist
 
 The first component is interpreted cautiously as a broad equity/risk co-movement direction in this historical sample rather than as a causal economic factor.
 
+
+## Market-Regime Baseline
+
+### Temporal Research Split
+
+For later predictive experiments, the return observations are divided chronologically at `2026-04-30`.
+
+The historical period contains **2,847 return observations**, while the later May-August 2026 period contains **84 observations**.
+
+Because the later period has already been inspected during project development, it is treated as a **fixed-cutoff temporal or pseudo-out-of-sample evaluation period**, rather than being described as a completely untouched holdout.
+
+### Regime Features
+
+The baseline market-condition vector is
+
+$$
+x_t =
+\begin{pmatrix}
+r_{\mathrm{SPY},t} \\
+\sigma_{\mathrm{SPY},t}^{(20)} \\
+d_t
+\end{pmatrix},
+$$
+
+where the three coordinates are:
+
+- SPY daily log return
+- backward-looking 20-trading-day SPY volatility
+- daily cross-asset return dispersion across the eight ETFs
+
+Before clustering, the geometry of this three-dimensional feature space was inspected through pairwise projections.
+
+![Return vs Volatility](results/regime_return_vs_volatility.png)
+
+![Return vs Cross-Asset Dispersion](results/regime_return_vs_dispersion.png)
+
+![Volatility vs Cross-Asset Dispersion](results/regime_volatility_vs_dispersion.png)
+
+The observations form a dense central region with asymmetric tails rather than obviously separated compact groups. Therefore, clustering is treated as a baseline statistical partition rather than evidence that naturally separated economic regimes necessarily exist.
+
+### KMeans Baseline
+
+Because the three features have different numerical scales, they are standardized before KMeans is fitted.
+
+For $K$ clusters, KMeans minimizes
+
+$$
+\sum_{k=1}^{K}
+\sum_{z_t \in C_k}
+\|z_t-\mu_k\|_2^2.
+$$
+
+Candidate values from $K=2$ through $K=8$ were compared using inertia, silhouette score, cluster sizes, and initialization stability.
+
+Among these candidates, $K=2$ produced the largest silhouette score. The resulting baseline contains:
+
+- **Cluster 0:** 309 observations (approximately **10.93%**)
+- **Cluster 1:** 2,519 observations (approximately **89.07%**)
+
+The smaller cluster has, on average, more negative SPY returns, higher recent SPY volatility, and higher cross-asset dispersion. These are described as **stress-like statistical characteristics**, not as proof of a causal economic regime.
+
+![KMeans Return vs Volatility](results/kmeans_return_vs_volatility.png)
+
+![KMeans Return vs Dispersion](results/kmeans_return_vs_dispersion.png)
+
+![KMeans Volatility vs Dispersion](results/kmeans_volatility_vs_dispersion.png)
+
+The plot colors identify Cluster 0 and Cluster 1, while the `X` markers identify the KMeans centroids.
+
+### Temporal Diagnostics
+
+KMeans uses feature-space geometry but does not use chronological dependence while fitting. The cluster assignments were therefore examined afterward through time.
+
+![KMeans Cluster Timeline](results/kmeans_cluster_timeline.png)
+
+The larger cluster is substantially more persistent, while the smaller cluster often occurs in shorter bursts.
+
+This is an important limitation rather than something to hide: it motivates comparison with a temporal latent-state model such as a Hidden Markov Model (HMM).
+
+The current KMeans result is therefore treated as a **reproducible geometric baseline**, not as evidence that the market has exactly two genuine persistent regimes.
+
 ## Mathematical and Algorithmic Documentation
 
 The repository includes a dedicated technical document covering:
@@ -152,7 +233,10 @@ quant-ai-market-lab/
 │   ├── download_data.py
 │   ├── compute_returns.py
 │   ├── exploratory_analysis.py
-│   └── pca_analysis.py
+│   ├── pca_analysis.py
+│   ├── temporal_split.py
+│   ├── regime_features.py
+│   └── regime_clustering.py
 ├── .gitignore
 ├── README.md
 └── requirements.txt
@@ -175,15 +259,17 @@ Raw and processed market datasets are intentionally excluded from Git version co
 
 The next research stages are:
 
-1. market-regime detection using clustering and temporal latent-state models
-2. volatility/risk prediction using statistical and machine-learning methods
-3. model explainability
-4. mathematically constrained portfolio optimization
-5. time-aware backtesting and benchmark comparison
-6. local generative-AI-assisted quantitative reporting
-7. interactive Streamlit research dashboard
+1. compare the KMeans baseline with a temporal latent-state model such as a Hidden Markov Model (HMM)
+2. evaluate market-state behavior using the fixed temporal research design
+3. develop volatility/risk forecasting baselines and machine-learning alternatives
+4. compare predictive models using time-aware validation
+5. add model explainability where appropriate
+6. formulate mathematically constrained portfolio-optimization problems
+7. perform time-aware backtesting and benchmark comparison
+8. add local generative-AI-assisted quantitative reporting
+9. develop an interactive Streamlit research dashboard
 
-These components are **planned work and are not represented as completed results in the current repository**.
+These components remain planned work and will not be represented as completed until their implementation and validation are added to the repository.
 
 ## Research and Validation Principles
 

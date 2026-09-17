@@ -783,3 +783,823 @@ later used as part of a predictive model or backtest, the standardization
 parameters and PCA directions must be estimated using only information
 available at that historical time. Fitting them on future observations would
 introduce look-ahead bias.
+
+## 7. Market-Regime Feature Construction and Geometric Interpretation
+
+### Research Question
+
+Before choosing a clustering algorithm, I first need to define what I mean by
+the "market condition" observed on a particular trading day.
+
+The question is:
+
+> Do the statistical characteristics of the eight ETF market exposures exhibit
+> distinguishable states over time?
+
+I do not begin by assuming that a particular clustering method will discover
+genuine economic regimes. The first step is instead to construct a small set of
+interpretable variables that describe different aspects of market behavior.
+
+For each trading day \(t\), I represent the market condition by the feature
+vector
+
+$$
+x_t =
+\begin{pmatrix}
+r_{\mathrm{SPY},t} \\
+\sigma_{\mathrm{SPY},t}^{(20)} \\
+d_t
+\end{pmatrix}.
+$$
+
+The three coordinates describe:
+
+1. the daily SPY log return, representing broad-equity market movement;
+
+2. the trailing 20-day volatility of SPY, representing the recent magnitude of
+   market fluctuations;
+
+3. the cross-asset dispersion of the eight ETF returns on that day, representing
+   how differently the assets are moving from one another.
+
+
+### Geometric Interpretation
+
+The feature construction gives a geometric way to think about the problem.
+
+Each trading day is represented by one point in a three-dimensional feature
+space. The three coordinate axes correspond to return, recent volatility, and
+cross-asset dispersion.
+
+Therefore, instead of initially asking an algorithm to assign a regime label, I
+can first inspect the geometry of the resulting point cloud.
+
+If market conditions naturally form well-separated groups, the point cloud
+should contain corresponding geometric structure. If the observations instead
+form one continuous cloud with tails or outliers, a clustering algorithm may
+still divide the observations, but those divisions should not automatically be
+interpreted as genuine persistent market regimes.
+
+This distinction is important because clustering algorithms can produce a
+partition even when the underlying data do not contain naturally separated
+groups.
+
+### Construction of the Three Features
+
+#### 1. Daily Broad-Market Return
+
+The first coordinate is the SPY daily log return,
+
+$$
+r_{\mathrm{SPY},t}
+=
+\log\left(
+\frac{P_{\mathrm{SPY},t}}
+{P_{\mathrm{SPY},t-1}}
+\right).
+$$
+
+SPY is used here as a simple and interpretable proxy for broad U.S. equity
+market movement. A positive value represents an upward daily movement and a
+negative value represents a downward daily movement.
+
+This is not the only possible choice. Alternatives include an equal-weighted
+return across the eight ETFs or a PCA-based common-market factor. I use SPY for
+the initial baseline because its interpretation is direct and it does not
+require estimating an additional model.
+
+If a PCA score is later used as a predictive feature, the PCA transformation
+must be fitted using historical data only. Using the previously computed
+full-sample PCA directions would introduce future information into the
+historical experiment.
+
+
+#### 2. Trailing 20-Day Volatility
+
+The second coordinate measures the recent variability of SPY returns.
+
+For a window of \(w=20\) trading days,
+
+$$
+\sigma_{\mathrm{SPY},t}^{(20)}
+=
+\sqrt{
+\frac{1}{w-1}
+\sum_{j=0}^{w-1}
+\left(
+r_{\mathrm{SPY},t-j}
+-
+\bar r_t^{(20)}
+\right)^2
+},
+$$
+
+where
+
+$$
+\bar r_t^{(20)}
+=
+\frac{1}{w}
+\sum_{j=0}^{w-1}
+r_{\mathrm{SPY},t-j}.
+$$
+
+The window is backward-looking: the feature at time \(t\) uses observations
+from \(t-19\) through \(t\), and therefore does not use future returns.
+
+The first 19 observations cannot have a complete 20-day window. They are
+therefore unavailable by construction rather than being treated as data
+errors.
+
+The 20-day window is a simple baseline corresponding approximately to one
+trading month. It is not assumed to be an optimal volatility estimator.
+Possible alternatives include other rolling-window lengths, exponentially
+weighted volatility, or conditional-volatility models such as GARCH. Such
+alternatives should be compared only when there is a clear modeling reason
+rather than chosen because they produce visually cleaner regimes.
+
+
+#### 3. Daily Cross-Asset Dispersion
+
+The third coordinate measures how differently the eight ETF returns behave on
+the same trading day.
+
+For \(n=8\) assets, first define the cross-sectional mean return
+
+$$
+\bar r_t
+=
+\frac{1}{n}
+\sum_{i=1}^{n} r_{i,t}.
+$$
+
+The daily cross-asset dispersion is then
+
+$$
+d_t
+=
+\sqrt{
+\frac{1}{n-1}
+\sum_{i=1}^{n}
+\left(
+r_{i,t}-\bar r_t
+\right)^2
+}.
+$$
+
+Geometrically, consider the eight-dimensional return vector
+
+$$
+r_t =
+(r_{1,t},\ldots,r_{n,t})^\top.
+$$
+
+The vector
+
+$$
+\bar r_t \mathbf{1}
+$$
+
+represents the point on the common-movement line where all assets have the
+same return.
+
+More precisely, define the one-dimensional common-movement subspace
+
+$$
+L=\{c\mathbf{1}:c\in\mathbb{R}\}.
+$$
+
+The vector
+
+$$
+\bar r_t\mathbf{1}
+$$
+
+is the orthogonal projection of \(r_t\) onto \(L\).
+
+From the definition of \(d_t\),
+
+$$
+\left\|
+r_t-\bar r_t\mathbf{1}
+\right\|_2^2
+=
+(n-1)d_t^2.
+$$
+
+Therefore,
+
+$$
+d_t
+=
+\frac{1}{\sqrt{n-1}}
+\left\|
+r_t-\bar r_t\mathbf{1}
+\right\|_2.
+$$
+
+For the current universe of \(n=8\) ETFs,
+
+$$
+\left\|
+r_t-\bar r_t\mathbf{1}
+\right\|_2
+=
+\sqrt{7}\,d_t.
+$$
+
+Thus, daily cross-asset dispersion has an exact geometric interpretation as a
+scaled Euclidean distance from the common-movement subspace.
+
+This is different from correlation. Dispersion is a cross-sectional quantity
+computed for one trading day, whereas correlation measures statistical
+co-movement between return series over multiple observations.
+
+
+### Causality and Timing of the Features
+
+All three baseline features are constructed using information available no
+later than trading day \(t\). No observation from \(t+1\) or later is required.
+
+The interpretation nevertheless depends on when the model is intended to be
+used. Because the day-\(t\) return and dispersion are known only after the
+relevant day-\(t\) prices are observed, these features describe the market
+condition at or after that observation time. They can subsequently be used as
+inputs for a next-period forecasting experiment, provided the temporal
+ordering is preserved.
+
+## 8. Feature Standardization Before KMeans
+
+### Why Standardization Is Necessary
+
+KMeans is based on Euclidean distances between observations and cluster
+centroids. Therefore, the numerical scale of each coordinate directly affects
+the geometry seen by the algorithm.
+
+For two feature vectors \(x\) and \(y\),
+
+$$
+\|x-y\|_2^2
+=
+\sum_{j=1}^{d}(x_j-y_j)^2.
+$$
+
+A feature with a substantially larger numerical scale can contribute more to
+this distance simply because of its units. This would implicitly give that
+coordinate greater influence on the clustering.
+
+To place the three regime features on comparable scales, each feature is
+standardized using
+
+$$
+z_{t,j}
+=
+\frac{x_{t,j}-\mu_j}{s_j},
+$$
+
+where \(\mu_j\) is the historical mean of feature \(j\), and \(s_j\) is its
+historical standard deviation.
+
+After standardization, each coordinate is centered near zero and has unit
+variance on the data used to fit the transformation.
+
+
+### Geometric Interpretation
+
+Standardization changes the coordinate system in which distances are measured.
+
+Subtracting the mean translates the point cloud so that its center is near the
+origin. Dividing each coordinate by its standard deviation rescales the axes so
+that one unit along each standardized axis represents approximately one
+standard deviation of movement in that feature.
+
+This is a diagonal affine transformation of the original feature space. It does
+not make the features statistically independent and it does not remove their
+correlations.
+
+For example, the historical 20-day SPY volatility and cross-asset dispersion
+have a positive sample correlation of approximately \(0.529\). Standardizing
+the two variables changes their units but does not remove this relationship.
+
+
+### Historical-Only Fitting
+
+The scaling parameters must respect the temporal structure of the experiment.
+
+The mean and standard deviation used by the scaler are estimated from the
+historical feature sample only. When later observations are evaluated, they
+must be transformed using these frozen historical parameters rather than
+refitting the scaler on the later period.
+
+In symbolic form, if
+
+$$
+\mu_j^{\mathrm{hist}}
+\quad\text{and}\quad
+s_j^{\mathrm{hist}}
+$$
+
+are estimated from the historical period, then a later observation is
+transformed as
+
+$$
+z_{t,j}^{\mathrm{later}}
+=
+\frac{
+x_{t,j}^{\mathrm{later}}-\mu_j^{\mathrm{hist}}
+}{
+s_j^{\mathrm{hist}}
+}.
+$$
+
+Using information from the later evaluation period to determine the scaling
+parameters would leak future information into the model-development process.
+
+
+### Numerical Validation
+
+For the historical regime-feature matrix, the standardized feature means were
+numerically close to zero,
+
+$$
+(-1.22\times10^{-17},
+ -1.11\times10^{-16},
+ -2.84\times10^{-16}),
+$$
+
+and the population standard deviations were
+
+$$
+(1,1,1).
+$$
+
+The very small deviations of the means from exactly zero are expected
+floating-point effects rather than modeling errors.
+
+The implementation also explicitly rejects non-finite feature values before
+fitting the scaler and checks that the transformed values remain finite.
+
+## 9. KMeans as a Geometric Baseline
+
+### Objective
+
+After standardization, each trading day is represented by a point
+
+$$
+z_t \in \mathbb{R}^3.
+$$
+
+For a chosen number of clusters \(K\), KMeans seeks cluster assignments
+\(C_1,\ldots,C_K\) and centroids \(\mu_1,\ldots,\mu_K\) that minimize the
+within-cluster sum of squared Euclidean distances:
+
+$$
+\min_{C_1,\ldots,C_K,\mu_1,\ldots,\mu_K}
+\sum_{k=1}^{K}
+\sum_{z_t\in C_k}
+\|z_t-\mu_k\|_2^2.
+$$
+
+In scikit-learn this objective value is reported as `inertia_`.
+
+The objective gives KMeans a direct geometric interpretation: observations
+assigned to the same cluster should lie relatively close to a common centroid.
+
+
+### Assignment Step and Voronoi Geometry
+
+For fixed centroids, each observation is assigned to its nearest centroid:
+
+$$
+c(t)
+=
+\arg\min_{k\in\{1,\ldots,K\}}
+\|z_t-\mu_k\|_2^2.
+$$
+
+Geometrically, the centroids divide feature space into Voronoi cells. Each
+Voronoi cell contains the points that are closer to one centroid than to any
+other centroid.
+
+For two centroids, the boundary between their cells is a hyperplane consisting
+of points that are equally distant from the two centroids.
+
+Therefore, KMeans produces a piecewise-linear geometric partition of the
+standardized feature space.
+
+
+### Why the Centroid Is the Mean
+
+Suppose the observations assigned to one cluster are
+
+$$
+z_1,\ldots,z_m.
+$$
+
+For fixed cluster membership, KMeans chooses the centroid \(\mu\) by minimizing
+
+$$
+f(\mu)
+=
+\sum_{i=1}^{m}\|z_i-\mu\|_2^2.
+$$
+
+Differentiating with respect to \(\mu\),
+
+$$
+\nabla_\mu f(\mu)
+=
+2m\mu
+-
+2\sum_{i=1}^{m}z_i.
+$$
+
+Setting the gradient equal to zero gives
+
+$$
+\mu
+=
+\frac{1}{m}
+\sum_{i=1}^{m}z_i.
+$$
+
+The Hessian is
+
+$$
+\nabla_\mu^2 f(\mu)=2mI,
+$$
+
+which is positive definite for a nonempty cluster. Therefore, the arithmetic
+mean is the unique minimizer of the squared-distance objective for that fixed
+cluster.
+
+This explains mathematically why the KMeans centroid-update step uses the
+within-cluster mean.
+
+
+### Alternating Algorithm
+
+KMeans alternates between two operations:
+
+1. Assignment: assign every observation to its nearest current centroid.
+
+2. Update: replace each centroid by the arithmetic mean of the observations
+   currently assigned to that cluster.
+
+Each step does not increase the KMeans objective. Because there are finitely
+many possible cluster assignments, the procedure eventually reaches a stable
+partition under the usual finite-data setting.
+
+This does not imply that KMeans finds the globally optimal partition. The final
+solution can depend on the initial centroids because the optimization problem
+is non-convex.
+
+
+### Initialization
+
+The implementation uses `k-means++` initialization rather than selecting all
+initial centroids uniformly at random.
+
+The purpose of `k-means++` is to spread the initial centroids through the data
+more carefully, reducing the chance of starting with several centroids in the
+same dense region.
+
+The implementation also uses
+
+`n_init = 20`
+
+so that multiple initializations are tried and the solution with the smallest
+KMeans objective is retained.
+
+A fixed `random_state` is used for reproducibility. Reproducibility does not
+remove initialization sensitivity, so the final partition is also compared
+across several different random seeds.
+
+
+### Computational Complexity
+
+Let
+
+- \(N\) be the number of observations,
+- \(K\) the number of clusters,
+- \(d\) the feature dimension,
+- \(I\) the number of KMeans iterations.
+
+A standard assignment step computes distances from approximately every
+observation to every centroid, requiring roughly
+
+$$
+O(NKd)
+$$
+
+operations per iteration.
+
+Over \(I\) iterations, one run therefore has approximate complexity
+
+$$
+O(NKdI).
+$$
+
+If several initializations are performed, this cost is multiplied by the
+number of initializations.
+
+In the current experiment,
+
+$$
+N=2828,\qquad d=3,
+$$
+
+and only small candidate values of \(K\) are considered. The computational
+cost is therefore small. The complexity becomes more relevant for much larger
+datasets, higher-dimensional feature spaces, or large numbers of repeated
+initializations.
+
+
+### What KMeans Does Not Model
+
+KMeans uses the geometry of the feature vectors but does not use the
+chronological ordering of the observations.
+
+For example, it treats two feature vectors with identical coordinates in the
+same way whether they occurred on consecutive trading days or several years
+apart.
+
+Therefore, KMeans can identify geometrically similar market conditions, but it
+does not directly model:
+
+- state persistence through time;
+- transition probabilities between states;
+- probabilistic uncertainty about state membership;
+- different covariance shapes for different states.
+
+For this reason, the KMeans result is treated as a baseline partition rather
+than immediate evidence of genuine persistent market regimes.
+
+## 10. KMeans Model Diagnostics and Empirical Findings
+
+### Why Inertia Alone Cannot Select the Number of Clusters
+
+The KMeans objective, or inertia, is
+
+$$
+J_K
+=
+\sum_{k=1}^{K}
+\sum_{z_t\in C_k}
+\|z_t-\mu_k\|_2^2.
+$$
+
+As the number of clusters increases, inertia cannot increase, because a model
+with more centroids has at least as much flexibility as a model with fewer
+centroids.
+
+Therefore, choosing the value of \(K\) with the smallest inertia would
+automatically favor larger values of \(K\). Inertia must instead be interpreted
+together with other diagnostics and the structure of the resulting clusters.
+
+
+### Silhouette Score
+
+For an observation \(i\), let
+
+$$
+a(i)
+$$
+
+be its average distance to observations in its own cluster, and let
+
+$$
+b(i)
+$$
+
+be the smallest average distance from \(i\) to observations in another
+cluster.
+
+The silhouette value is
+
+$$
+s(i)
+=
+\frac{b(i)-a(i)}
+{\max\{a(i),b(i)\}}.
+$$
+
+Its value lies between \(-1\) and \(1\).
+
+Values closer to \(1\) indicate that an observation is relatively well
+separated from neighboring clusters. Values near zero indicate overlap near a
+cluster boundary, while negative values can indicate that an observation may
+be closer, on average, to another cluster.
+
+The overall silhouette score is the average of \(s(i)\) across observations.
+
+A high silhouette score is evidence of geometric separation under the chosen
+distance and feature representation. It is not proof that the clusters are
+economically meaningful market regimes.
+
+
+### Candidate Values of K
+
+I evaluated
+
+$$
+K=2,\ldots,8
+$$
+
+on the standardized historical feature matrix.
+
+The observed diagnostics were:
+
+| K | Inertia | Silhouette | Cluster sizes |
+|---:|---:|---:|---|
+| 2 | 6293.477 | 0.5624 | 309, 2519 |
+| 3 | 4943.018 | 0.4116 | 2208, 33, 587 |
+| 4 | 3888.653 | 0.3968 | 509, 1846, 441, 32 |
+| 5 | 3433.518 | 0.3938 | 1831, 435, 21, 530, 11 |
+| 6 | 3064.706 | 0.3166 | 465, 1548, 159, 625, 10, 21 |
+| 7 | 2757.822 | 0.3027 | 171, 1398, 289, 557, 21, 382, 10 |
+| 8 | 2526.448 | 0.2921 | 510, 154, 1227, 20, 248, 10, 542, 117 |
+
+Among these candidate values, \(K=2\) produced the largest silhouette score.
+
+For larger values of \(K\), several very small clusters appeared. Together
+with the previously inspected feature-space geometry, this suggests that some
+additional centroids may be isolating relatively unusual tail observations
+rather than revealing a large number of clearly separated, persistent market
+states.
+
+For this reason, \(K=2\) is retained as a baseline partition for further
+diagnostics. This is not a claim that the market has exactly two true regimes.
+
+
+### Interpretation of the Two Centroids
+
+After transforming the standardized centroids back into the original feature
+units, the two cluster centers were approximately:
+
+| Feature | Cluster 0 | Cluster 1 |
+|---|---:|---:|
+| SPY daily log return | -0.009342 | 0.001725 |
+| SPY 20-day daily volatility | 0.018999 | 0.008184 |
+| Cross-asset dispersion | 0.022333 | 0.008783 |
+
+Cluster 0 therefore contains, on average, observations with more negative SPY
+returns, higher recent volatility, and higher cross-asset dispersion.
+
+Cluster 1 contains observations with, on average, mildly positive SPY returns,
+lower volatility, and lower dispersion.
+
+These descriptions are empirical characteristics of the clusters. The
+numerical labels 0 and 1 have no intrinsic economic meaning, and I do not
+hard-code semantic regime names into the algorithm.
+
+
+### Initialization Stability and Adjusted Rand Index
+
+Because KMeans is sensitive to initialization, I repeated the \(K=2\)
+experiment across several random seeds.
+
+To compare two partitions while ignoring arbitrary permutations of the cluster
+labels, I use the Adjusted Rand Index (ARI).
+
+ARI compares whether pairs of observations are grouped together or separately
+in two different partitions and adjusts the comparison for agreement expected
+by chance.
+
+A value of
+
+$$
+\mathrm{ARI}=1
+$$
+
+means that the two partitions are identical up to a permutation of cluster
+labels.
+
+Across the tested seeds, almost all solutions had ARI equal to \(1\) relative
+to the reference solution. One seed produced
+
+$$
+\mathrm{ARI}\approx0.993261,
+$$
+
+with only a very small difference in the partition.
+
+Therefore, the observed \(K=2\) partition is highly stable with respect to the
+tested KMeans initializations.
+
+This stability addresses one computational concern, but it does not establish
+that the clusters correspond to true economic regimes.
+
+
+### Temporal Diagnostics
+
+Although KMeans does not use time ordering during fitting, I examine the
+resulting labels afterward to determine whether the geometric clusters also
+show temporal persistence.
+
+For consecutive observations, define the empirical transition count
+
+$$
+N_{ij}
+=
+\#\{t:c_t=i,\;c_{t+1}=j\}.
+$$
+
+The corresponding empirical transition probability is
+
+$$
+\widehat P_{ij}
+=
+\frac{N_{ij}}
+{\sum_j N_{ij}}.
+$$
+
+For the \(K=2\) baseline, the transition matrix was approximately
+
+$$
+\widehat P
+=
+\begin{pmatrix}
+0.436893 & 0.563107 \\
+0.069102 & 0.930898
+\end{pmatrix}.
+$$
+
+The complete historical feature sequence contained 348 cluster switches, giving
+a switch rate of approximately
+
+$$
+12.31\%.
+$$
+
+The run-length diagnostics were:
+
+| Cluster | Number of runs | Mean run length | Median | Maximum |
+|---|---:|---:|---:|---:|
+| 0 | 174 | 1.776 | 1 | 44 |
+| 1 | 175 | 14.394 | 3 | 295 |
+
+Cluster 1 is relatively persistent, with an estimated self-transition
+probability of approximately \(0.931\).
+
+Cluster 0 is substantially less persistent. Its median run length is only one
+trading day, even though a few longer episodes occur.
+
+
+### What the Baseline Result Supports
+
+The KMeans experiment supports the conclusion that the selected feature space
+contains a reproducible geometric separation between a large lower-volatility,
+lower-dispersion group and a smaller group associated with more negative
+returns, higher volatility, and higher dispersion.
+
+However, the temporal diagnostics show that the smaller group is frequently
+short-lived.
+
+Therefore, I interpret KMeans as identifying different geometric market
+conditions rather than claiming that it has established two persistent latent
+economic regimes.
+
+
+### Limitations and Reasonable Alternatives
+
+KMeans has several limitations for this problem.
+
+It uses squared Euclidean distance, so extreme observations can exert a strong
+influence on centroids. The feature-space plots contain tails and unusual
+stress observations, so this sensitivity is relevant.
+
+KMeans also favors centroid-based geometric partitions and does not explicitly
+represent clusters with different covariance structures.
+
+Most importantly, it ignores temporal dependence while fitting the clusters.
+
+Reasonable alternatives include:
+
+- a Gaussian Mixture Model, which can represent probabilistic membership and
+  different ellipsoidal covariance structures;
+
+- a Hidden Markov Model, which can explicitly represent latent states and
+  transition probabilities through time;
+
+- alternative feature representations or scaling methods when justified by the
+  statistical properties of the data.
+
+These alternatives should not be adopted simply because they are more
+sophisticated. They should be compared against the KMeans baseline using
+consistent historical information and clearly defined diagnostics.
+
+
+### Motivation for the Next Experiment
+
+The KMeans result creates a specific next research question:
+
+> If temporal state transitions are modeled explicitly, do the inferred market
+> states become more coherent and persistent without sacrificing interpretability?
+
+This provides a methodological reason to investigate a Hidden Markov Model
+rather than adding it only as a more advanced algorithm.
+
+The later May-August period remains outside this model-development comparison.
+Feature choices, scaling rules, and model decisions should be developed using
+the historical period before the later temporal evaluation is used.

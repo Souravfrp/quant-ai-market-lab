@@ -2,7 +2,7 @@
 
 An ongoing quantitative research project exploring cross-asset market data through statistical analysis, numerical linear algebra, and reproducible computational methods, with planned extensions to machine learning and portfolio optimization.
 
-> **Project Status:** Active development. Completed stages currently include validated market-data ingestion, return analysis, volatility and dependence analysis, covariance estimation, Principal Component Analysis (PCA), a fixed-cutoff temporal research split, market-regime feature construction, and a validated KMeans regime baseline. Temporal latent-state modeling, predictive risk modeling, portfolio optimization, backtesting, explainability, and an interactive application remain planned extensions.
+> **Project Status:** Active development. Completed stages currently include validated market-data ingestion, return analysis, volatility and dependence analysis, covariance estimation, Principal Component Analysis (PCA), a fixed-cutoff temporal research split, market-regime feature construction, a validated KMeans geometric baseline, and Gaussian Hidden Markov Model (HMM) temporal latent-state analysis with chronological validation. Predictive risk modeling, portfolio optimization, backtesting, explainability, and an interactive application remain planned extensions.
 
 ## Motivation
 
@@ -104,7 +104,7 @@ The implementation validates eigenvector orthogonality, eigenvalue/trace consist
 The first component is interpreted cautiously as a broad equity/risk co-movement direction in this historical sample rather than as a causal economic factor.
 
 
-## Market-Regime Baseline
+## Market-Regime Analysis
 
 ### Temporal Research Split
 
@@ -192,6 +192,49 @@ This is an important limitation rather than something to hide: it motivates comp
 
 The current KMeans result is therefore treated as a **reproducible geometric baseline**, not as evidence that the market has exactly two genuine persistent regimes.
 
+### Hidden Markov Model Temporal Analysis
+
+The same three standardized market-condition features were then modeled
+with Gaussian Hidden Markov Models (HMMs), which explicitly represent
+latent state persistence and transition probabilities through time.
+
+A two-state full-covariance HMM was first used as a simple temporal
+baseline. Its decoded historical states contained **1,853** and **975**
+observations, with expected durations of approximately **61.1** and
+**32.1 trading observations**.
+
+The two-state HMM changed decoded state **54 times** over the historical
+sequence, compared with **348 KMeans cluster switches**. This is not
+treated as evidence that the HMM is automatically superior because
+temporal persistence is built directly into the HMM transition structure.
+
+For more detailed interpretation, a **three-state full-covariance
+Gaussian HMM** was retained as the primary specification. Its decoded
+historical state proportions are approximately:
+
+- **48.69%** — lower-volatility / lower-dispersion conditions
+- **38.72%** — intermediate-volatility / intermediate-dispersion conditions
+- **12.59%** — higher-volatility / higher-dispersion, stress-like conditions
+
+The corresponding expected durations are approximately **45.6**,
+**24.7**, and **13.5 trading observations**.
+
+Candidate HMMs with two through six states and both diagonal and full
+covariance structures were compared using multiple initializations,
+likelihood, AIC/BIC, chronological validation, rolling-origin validation,
+Viterbi occupancy, and posterior state probabilities.
+
+Higher-state models continued to improve likelihood but increasingly
+introduced small or period-specific latent components. The three-state
+full-covariance model is therefore retained as a **parsimonious and
+interpretable specification**, not as evidence that financial markets
+contain exactly three true regimes.
+
+The later May-August 2026 period remains separate from HMM
+model-development decisions and is reserved for the fixed-cutoff temporal
+evaluation stage.
+
+
 ## Mathematical and Algorithmic Documentation
 
 The repository includes a dedicated technical document covering:
@@ -244,7 +287,8 @@ quant-ai-market-lab/
 │   ├── pca_analysis.py
 │   ├── temporal_split.py
 │   ├── regime_features.py
-│   └── regime_clustering.py
+│   ├── regime_clustering.py
+│   └── regime_hmm.py
 ├── .gitignore
 ├── README.md
 └── requirements.txt
@@ -267,15 +311,21 @@ Raw and processed market datasets are intentionally excluded from Git version co
 
 The next research stages are:
 
-1. compare the KMeans baseline with a temporal latent-state model such as a Hidden Markov Model (HMM)
-2. evaluate market-state behavior using the fixed temporal research design
-3. develop volatility/risk forecasting baselines and machine-learning alternatives
-4. compare predictive models using time-aware validation
-5. add model explainability where appropriate
-6. formulate mathematically constrained portfolio-optimization problems
-7. perform time-aware backtesting and benchmark comparison
-8. add local generative-AI-assisted quantitative reporting
-9. develop an interactive Streamlit research dashboard
+1. evaluate the retained market-state models on the later fixed-cutoff temporal period
+
+2. develop volatility/risk forecasting baselines and machine-learning alternatives
+
+3. compare predictive models using time-aware validation
+
+4. add model explainability where appropriate
+
+5. formulate mathematically constrained portfolio-optimization problems
+
+6. perform time-aware backtesting and benchmark comparison
+
+7. add local generative-AI-assisted quantitative reporting
+
+8. develop an interactive Streamlit research dashboard
 
 These components remain planned work and will not be represented as completed until their implementation and validation are added to the repository.
 

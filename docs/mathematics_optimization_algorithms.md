@@ -1689,3 +1689,844 @@ rather than adding it only as a more advanced algorithm.
 The later May-August period remains outside this model-development comparison.
 Feature choices, scaling rules, and model decisions should be developed using
 the historical period before the later temporal evaluation is used.
+
+## 11. Hidden Markov Model for Temporal Market States
+
+### 11.1 Motivation and Model
+
+KMeans partitions observations by geometry in feature space, but it does not use chronological order during fitting. The Hidden Markov Model (HMM) extends the same three-feature regime representation by introducing a latent state sequence with explicit transition probabilities.
+
+The observed feature vector is
+
+\[
+X_t =
+\begin{pmatrix}
+r_{\mathrm{SPY},t} \\
+\sigma_{\mathrm{SPY},t}^{(20)} \\
+d_t
+\end{pmatrix},
+\]
+
+where \(r_{\mathrm{SPY},t}\) is the SPY daily log return, \(\sigma_{\mathrm{SPY},t}^{(20)}\) is backward-looking 20-trading-day SPY volatility, and \(d_t\) is cross-asset return dispersion.
+
+Let
+
+\[
+S_t \in \{1,\ldots,K\}
+\]
+
+denote the latent market state. The first-order Markov assumption is
+
+\[
+P(S_t \mid S_{t-1},S_{t-2},\ldots)
+=
+P(S_t\mid S_{t-1}).
+\]
+
+The transition matrix is
+
+\[
+A=(a_{ij}),
+\qquad
+a_{ij}=P(S_t=j\mid S_{t-1}=i).
+\]
+
+One model step corresponds to one consecutive trading observation, not one fixed calendar-day interval.
+
+### 11.2 Gaussian Emissions
+
+Conditioned on state \(k\), the feature vector is modeled as
+
+\[
+X_t\mid S_t=k
+\sim
+\mathcal{N}(\mu_k,\Sigma_k).
+\]
+
+The project compares diagonal and full covariance specifications. A diagonal covariance model treats the three features as conditionally uncorrelated within a state, while a full covariance model allows state-specific dependence between return, recent volatility, and cross-asset dispersion.
+
+For a full covariance state, constant-density contours satisfy
+
+\[
+(x-\mu_k)^\top \Sigma_k^{-1}(x-\mu_k)=c,
+\]
+
+so the emission geometry is ellipsoidal rather than purely centroid-based as in KMeans.
+
+### 11.3 Scaling and Information Availability
+
+The HMM is fitted to standardized features because the three coordinates have different numerical scales.
+
+For chronological validation, the scaler is fitted only on that fold's training period,
+
+\[
+z_{tj}
+=
+\frac{x_{tj}-\mu_j^{\mathrm{train}}}
+{\sigma_j^{\mathrm{train}}},
+\]
+
+and the same training statistics are then used to transform the later validation block. This prevents future validation information from entering the scaling step.
+
+The HMM development experiments use historical observations only through 2026-04-30. The later May-August 2026 period remains outside model specification and tuning.
+
+### 11.4 EM Fitting and Multiple Initializations
+
+The Gaussian HMM parameters are estimated iteratively using
+expectation-maximization (EM).
+
+The fitted parameters include:
+
+- the initial-state probabilities,
+- the transition matrix,
+- state-specific mean vectors,
+- and state-specific covariance matrices.
+
+HMM likelihood optimization can converge to different local solutions.
+Therefore, one random initialization is not treated as sufficient evidence
+of a stable fit.
+
+For each candidate specification, several random seeds are fitted.
+
+A run is treated as valid only when:
+
+1. the fitting routine reports convergence, and
+2. the recorded EM log-likelihood history does not contain a material
+   decrease beyond the numerical tolerance used in the diagnostic.
+
+Among valid runs for a fixed specification, the fit with the largest
+historical log-likelihood is retained.
+
+This multi-start procedure is particularly important for the three-state
+full-covariance model because the initialization experiment identified
+more than one local optimum.
+
+### 11.5 Sequence Likelihood and Model Complexity
+
+For model parameters \(\theta\), the likelihood of the observed feature
+sequence is
+
+\[
+P(X_{1:T}\mid\theta),
+\]
+
+and the corresponding log-likelihood is
+
+\[
+\ell(\theta)
+=
+\log P(X_{1:T}\mid\theta).
+\]
+
+A larger log-likelihood means that the fitted model assigns greater
+probability density to the observed sequence.
+
+However, likelihood alone is not sufficient for comparing models of
+different complexity because adding states and covariance parameters can
+improve in-sample fit.
+
+For \(K\) hidden states and \(d\) observed features, the number of free
+parameters used in this project is
+
+\[
+p
+=
+(K-1)
++
+K(K-1)
++
+Kd
++
+p_{\mathrm{cov}}.
+\]
+
+The four terms represent:
+
+1. initial-state probabilities,
+2. transition probabilities,
+3. state-specific means,
+4. covariance parameters.
+
+For diagonal covariance,
+
+\[
+p_{\mathrm{cov}}
+=
+Kd,
+\]
+
+while for full covariance,
+
+\[
+p_{\mathrm{cov}}
+=
+K\frac{d(d+1)}{2}.
+\]
+
+The Akaike Information Criterion is
+
+\[
+\mathrm{AIC}
+=
+-2\ell + 2p,
+\]
+
+and the Bayesian Information Criterion is
+
+\[
+\mathrm{BIC}
+=
+-2\ell + p\log N,
+\]
+
+where \(N\) is the number of feature observations.
+
+Lower values indicate a better fit-complexity trade-off under the
+corresponding criterion.
+
+The manual parameter-count function in this project was checked against
+the implementation in `hmmlearn` 0.3.3. The formulas agree for the
+initial-state, transition, mean, diagonal-covariance, and full-covariance
+parameter counts.
+
+Because the observations form a dependent financial time series, AIC and
+BIC are treated here as comparative model diagnostics rather than proof
+that one candidate state count is the uniquely correct description of
+market behavior.
+
+### 11.6 Viterbi Decoding and Posterior State Probabilities
+
+After fitting an HMM, there are two useful ways to describe its latent
+states.
+
+The first is a hard state sequence. The Viterbi algorithm finds the
+most likely joint hidden-state path
+
+\[
+\hat S_{1:T}
+=
+\arg\max_{S_{1:T}}
+P(S_{1:T}\mid X_{1:T},\theta).
+\]
+
+This assigns one state to every observation.
+
+The numerical state labels themselves have no intrinsic economic meaning.
+For example, State 0 is not automatically a low-risk or high-risk state.
+Interpretation must instead come from the fitted state means, covariance
+structure, transition probabilities, and observed state occupancy.
+
+A hard Viterbi assignment does not describe uncertainty. Therefore, the
+project also examines posterior state probabilities,
+
+\[
+\gamma_t(k)
+=
+P(S_t=k\mid X_{1:T},\theta).
+\]
+
+For a validation period containing \(T_{\mathrm{val}}\) observations, the
+average posterior share of state \(k\) is
+
+\[
+\bar{\gamma}_k
+=
+\frac{1}{T_{\mathrm{val}}}
+\sum_{t\in\mathrm{validation}}
+\gamma_t(k).
+\]
+
+This diagnostic helps distinguish between two situations:
+
+1. a state is absent from the Viterbi path but still receives meaningful
+   posterior probability, or
+2. a state receives essentially no probability during that period.
+
+In the current experiments, posterior probabilities are used as structural
+diagnostics rather than real-time trading signals. Because the diagnostic
+uses the observed sequence when computing smoothed state probabilities, it
+should not be interpreted as information that would necessarily have been
+available at the corresponding historical time.
+
+### 11.7 Expected State Duration
+
+Let
+
+\[
+a_{kk}
+=
+P(S_t=k\mid S_{t-1}=k)
+\]
+
+be the probability that the HMM remains in state \(k\) for the next
+trading observation.
+
+Under the first-order time-homogeneous Markov assumption, the duration
+\(D_k\) of a continuous visit to state \(k\) follows a geometric
+distribution.
+
+Its expected duration is
+
+\[
+E[D_k]
+=
+\frac{1}{1-a_{kk}}.
+\]
+
+Therefore, a self-transition probability close to one corresponds to a
+more persistent latent state.
+
+The duration is measured in trading observations rather than calendar
+days. For example, a Friday-to-Monday transition and a Monday-to-Tuesday
+transition are each counted as one model transition.
+
+Expected duration is useful for comparing temporal persistence across
+states, but it should be interpreted as a model-implied average rather
+than a guarantee that every observed state episode lasts that long.
+
+### 11.8 Chronological Validation
+
+HMM model comparison is not based only on in-sample likelihood.
+
+An internal chronological train-validation split is constructed entirely
+inside the historical development period.
+
+Approximately the first 80% of the historical regime-feature observations
+are used for training, while the remaining 20% are used for validation.
+
+The split is chronological rather than randomly shuffled. This preserves
+the ordering of the financial time series and avoids allowing later
+observations to enter the training period.
+
+For each candidate HMM specification:
+
+1. the scaler is fitted using only the training observations,
+2. the training observations are standardized using that scaler,
+3. the validation observations are transformed using the same training
+   scaler,
+4. the HMM is fitted only to the standardized training sequence,
+5. the later validation sequence is then evaluated.
+
+For fitted parameters \(\theta\), the conditional validation
+log-likelihood is calculated as
+
+\[
+\log P(
+X_{\mathrm{val}}
+\mid
+X_{\mathrm{train}},
+\theta
+)
+=
+\log P(
+X_{\mathrm{train}},
+X_{\mathrm{val}}
+\mid
+\theta
+)
+-
+\log P(
+X_{\mathrm{train}}
+\mid
+\theta
+).
+\]
+
+Dividing this quantity by the number of validation observations gives
+validation log-likelihood per observation.
+
+This normalization makes scores from validation blocks of different sizes
+more directly comparable.
+
+A larger validation log-likelihood per observation indicates that the
+fitted model assigns greater conditional probability density to the later
+observations.
+
+For decoded validation states, the training and validation observations
+are joined in chronological order before decoding, and only the validation
+tail is retained for validation-state diagnostics.
+
+This preserves the state-history information at the train-validation
+boundary instead of decoding the validation block as if it began with an
+unrelated new hidden-state sequence.
+
+Chronological validation is used here as a model-development diagnostic.
+It is separate from the later May-August 2026 fixed-cutoff evaluation
+period.
+
+### 11.9 Rolling-Origin Validation
+
+A single chronological train-validation split may depend strongly on the
+particular date chosen for the boundary.
+
+To test whether conclusions remain similar across several later periods,
+the project also uses expanding-window rolling-origin validation.
+
+The four training and validation boundaries are approximately
+
+\[
+60\% \rightarrow 70\%,
+\qquad
+70\% \rightarrow 80\%,
+\qquad
+80\% \rightarrow 90\%,
+\qquad
+90\% \rightarrow 100\%.
+\]
+
+For example, in the first fold, approximately the first 60% of the
+historical observations form the training sequence and the following
+10% form the validation sequence.
+
+The next fold expands the training sequence to approximately 70%, and
+the following 10% becomes the new validation period.
+
+This process continues until the final historical observations are used
+for validation.
+
+For every fold:
+
+1. the scaler is fitted only on that fold's training observations,
+2. the HMM is fitted only on the standardized training sequence,
+3. the validation observations are transformed with the training scaler,
+4. conditional validation log-likelihood per observation is calculated,
+5. the combined train-validation sequence is decoded chronologically,
+6. only the validation tail is used for validation-state diagnostics.
+
+The model specifications compared are
+
+\[
+K \in \{2,3,4,5,6\},
+\]
+
+with both diagonal and full covariance matrices.
+
+Several random initializations are attempted for each specification.
+Only valid fits are considered when selecting the fitted model for a fold.
+
+For each specification, the project records the mean and standard deviation
+of validation log-likelihood per observation across the folds.
+
+The standard deviation is useful because two models can have similar
+average validation performance while differing substantially in stability
+across time periods.
+
+State occupancy is also examined.
+
+For each validation block, the minimum number of observations assigned to
+any state by the Viterbi path is recorded.
+
+In addition, the minimum average posterior state probability is examined.
+
+These diagnostics are important because a model can obtain improved
+likelihood by introducing additional latent components that are used only
+rarely or effectively disappear during some later periods.
+
+Therefore, rolling-origin validation is used not only to compare
+likelihood, but also to examine whether the inferred state structure
+remains meaningfully represented through time.
+
+This is especially relevant when comparing three-state models with more
+complex four-, five-, and six-state specifications.
+
+### 11.10 Two-State Temporal Baseline
+
+The first temporal comparison uses a two-state, full-covariance Gaussian
+HMM fitted to the same 2,828 historical regime-feature observations used
+for the KMeans comparison.
+
+The fitted historical log-likelihood is approximately
+
+\[
+\ell = -8563.705.
+\]
+
+The decoded state sizes are
+
+\[
+1853
+\quad\text{and}\quad
+975,
+\]
+
+corresponding to approximately
+
+\[
+65.52\%
+\quad\text{and}\quad
+34.48\%
+\]
+
+of the historical observations.
+
+The estimated transition matrix is approximately
+
+\[
+A
+=
+\begin{pmatrix}
+0.9836 & 0.0164 \\
+0.0311 & 0.9689
+\end{pmatrix}.
+\]
+
+The large diagonal entries indicate substantial temporal persistence.
+
+Using
+
+\[
+E[D_k]
+=
+\frac{1}{1-a_{kk}},
+\]
+
+the corresponding expected state durations are approximately
+
+\[
+61.1
+\quad\text{and}\quad
+32.1
+\]
+
+trading observations.
+
+In original financial units, the approximate state means are
+
+\[
+\begin{array}{c|ccc}
+ & r_{\mathrm{SPY}}
+ & \sigma_{\mathrm{SPY}}^{(20)}
+ & d_t \\
+\hline
+\text{State 0}
+& 0.000778
+& 0.006418
+& 0.008267 \\
+\text{State 1}
+& 0.000031
+& 0.014939
+& 0.014034
+\end{array}
+\]
+
+The second state therefore has substantially higher recent SPY volatility
+and higher cross-asset dispersion in this historical fit.
+
+These states are interpreted descriptively as lower-volatility and
+higher-volatility statistical conditions rather than as automatically
+identified economic regimes.
+
+The two-state initialization experiment was highly stable across the tested
+random seeds. Fits reached the same likelihood and equivalent decoded
+partitions up to arbitrary state-label permutation.
+
+The two-state HMM also produces much more persistent temporal assignments
+than the KMeans baseline.
+
+The KMeans baseline changes cluster assignment 348 times over the historical
+sequence, corresponding to approximately 12.31% of consecutive transitions.
+
+The two-state HMM changes decoded state only 54 times, corresponding to
+approximately 1.91% of consecutive transitions.
+
+This difference should not be interpreted as proof that the HMM is
+automatically superior. Persistence is explicitly encouraged by the HMM
+transition structure, while KMeans contains no temporal transition model.
+
+Instead, the comparison demonstrates the methodological distinction between
+a purely geometric partition and a latent-state model that explicitly
+represents temporal persistence.
+
+### 11.11 Three-State Full-Covariance HMM
+
+For more detailed interpretation, the project also fits a three-state
+full-covariance Gaussian HMM using multiple random initializations.
+
+The selected valid fit has historical log-likelihood approximately
+
+\[
+\ell = -7376.127.
+\]
+
+The decoded historical state sizes are
+
+\[
+1377,\qquad1095,\qquad356,
+\]
+
+corresponding approximately to
+
+\[
+48.69\%,\qquad38.72\%,\qquad12.59\%
+\]
+
+of the 2,828 historical feature observations.
+
+The estimated transition matrix is approximately
+
+\[
+A
+=
+\begin{pmatrix}
+0.9781 & 0.0150 & 0.0070 \\
+0.0251 & 0.9595 & 0.0155 \\
+0.0077 & 0.0666 & 0.9257
+\end{pmatrix}.
+\]
+
+All three diagonal transition probabilities are large, although the
+third state is less persistent than the first two.
+
+The corresponding expected durations are approximately
+
+\[
+45.6,\qquad24.7,\qquad13.5
+\]
+
+trading observations.
+
+In original financial units, the approximate state means are
+
+\[
+\begin{array}{c|ccc}
+ & r_{\mathrm{SPY}}
+ & \sigma_{\mathrm{SPY}}^{(20)}
+ & d_t \\
+\hline
+\text{State 0}
+& 0.000777
+& 0.005593
+& 0.007944 \\
+\text{State 1}
+& 0.000582
+& 0.010558
+& 0.010614 \\
+\text{State 2}
+& -0.000666
+& 0.020252
+& 0.018119
+\end{array}
+\]
+
+The states therefore show a clear ordering in the two risk-related
+coordinates:
+
+\[
+\text{State 0}
+<
+\text{State 1}
+<
+\text{State 2}
+\]
+
+for both recent SPY volatility and cross-asset dispersion.
+
+For descriptive interpretation, the states are therefore referred to as:
+
+- lower-volatility / lower-dispersion,
+- intermediate-volatility / intermediate-dispersion,
+- higher-volatility / higher-dispersion and stress-like.
+
+The final description remains statistical rather than causal. In
+particular, the third state is not automatically labeled a financial
+crisis state.
+
+The full covariance matrices also have increasingly large eigenvalues as
+the state index moves from the lower-volatility state toward the
+higher-volatility state.
+
+Approximate covariance eigenvalues are
+
+\[
+\text{State 0: }
+(1.69\times10^{-6},
+1.25\times10^{-5},
+3.16\times10^{-5}),
+\]
+
+\[
+\text{State 1: }
+(4.35\times10^{-6},
+2.21\times10^{-5},
+1.10\times10^{-4}),
+\]
+
+and
+
+\[
+\text{State 2: }
+(7.65\times10^{-5},
+1.95\times10^{-4},
+5.36\times10^{-4}).
+\]
+
+Geometrically, this means that the higher-volatility state has a broader
+Gaussian covariance ellipsoid in all principal covariance directions.
+
+This geometric interpretation complements the state means: the
+higher-volatility state is characterized not only by larger average
+volatility and dispersion, but also by greater within-state variation.
+
+### 11.12 Initialization Sensitivity and Model-Selection Decision
+
+The three-state full-covariance HMM is not completely independent of
+initialization.
+
+Several tested random seeds converged to the same higher-likelihood
+solution with approximately
+
+\[
+\ell = -7376.127,
+\]
+
+and equivalent decoded partitions up to arbitrary state-label permutation.
+
+Other seeds converged to a different local solution with approximately
+
+\[
+\ell = -7441.404.
+\]
+
+The Adjusted Rand Index between these two partitions is approximately
+
+\[
+0.591.
+\]
+
+Therefore, the three-state model should not be described as
+initialization-independent.
+
+The implementation instead fits multiple initializations, rejects invalid
+runs, and retains the valid fit with the largest historical log-likelihood.
+
+For the retained three-state full-covariance model, the selected
+initialization used random seed 10.
+
+The candidate-state comparison considered
+
+\[
+K \in \{2,3,4,5,6\}
+\]
+
+with both diagonal and full covariance structures.
+
+Increasing model complexity generally continued to improve historical
+likelihood and chronological validation likelihood.
+
+Therefore, the experiment does not support the claim that three states
+are statistically optimal.
+
+However, higher-state models increasingly produced small or
+period-specific latent components.
+
+The three-state full-covariance model has historical state proportions of
+approximately
+
+\[
+48.69\%,\qquad38.72\%,\qquad12.59\%.
+\]
+
+All three states therefore retain substantial representation over the
+full historical period.
+
+For larger values of \(K\), some states become much smaller.
+
+The rolling-origin validation diagnostics show that some higher-state
+models contain states with zero Viterbi occupancy in particular future
+validation blocks.
+
+Posterior-probability diagnostics also show that some of these states
+receive extremely small posterior probability during those periods.
+
+Even the three-state model contains a relatively rare state in some
+validation folds, so its interpretation should remain cautious.
+
+The three-state full-covariance HMM is retained as the primary
+interpretable specification because it provides:
+
+1. a clear ordering in volatility and cross-asset dispersion,
+2. substantial full-history occupancy for all three states,
+3. explicit temporal persistence,
+4. state-specific covariance geometry,
+5. and lower complexity than the four-, five-, and six-state alternatives.
+
+This is a modeling trade-off rather than proof of the true number of
+market regimes.
+
+The experiment therefore separates two questions:
+
+\[
+\text{Which model gives the highest likelihood?}
+\]
+
+and
+
+\[
+\text{Which model gives a useful and defensible state representation?}
+\]
+
+In the current results, these questions do not have the same answer.
+
+The higher-state models are retained as sensitivity analyses rather than
+discarded. Their improved likelihood shows that richer latent
+representations can fit the observed sequence more closely, while their
+sparse-state behavior cautions against interpreting every additional
+component as a persistent economic regime.
+
+### 11.13 Limitations and Conclusion
+
+The HMM analysis provides a more explicitly temporal description of the
+regime-feature sequence than KMeans, but it still relies on several
+simplifying assumptions.
+
+First, the Gaussian emission model may not fully represent heavy tails,
+skewness, or other non-Gaussian behavior commonly observed in financial
+data.
+
+Second, the current HMM is first-order and time-homogeneous. The transition
+matrix is therefore assumed to remain constant through the fitted historical
+period.
+
+Third, one model step corresponds to one consecutive trading observation.
+The model does not explicitly adjust transition probabilities for the
+different calendar gaps created by weekends and market holidays.
+
+Fourth, the inferred states are latent statistical components. They should
+not automatically be assigned causal macroeconomic labels such as
+"recession", "crisis", or "recovery" without independent evidence.
+
+Fifth, posterior smoothing probabilities use information from the observed
+sequence on both sides of a time point. They are therefore useful for
+structural diagnosis, but they are not equivalent to probabilities that
+would necessarily have been available in real time.
+
+Sixth, increasing the number of states improves likelihood in the current
+experiments. The retained three-state model is therefore a deliberate
+interpretability and parsimony choice rather than a statistically unique
+solution.
+
+The main conclusion of this stage is therefore comparative.
+
+KMeans provides a simple geometric baseline based on distances from
+centroids.
+
+The Gaussian HMM extends this framework by adding:
+
+- latent temporal states,
+- state-transition probabilities,
+- persistence,
+- state-specific covariance geometry,
+- probabilistic state uncertainty,
+- and chronological validation.
+
+The resulting three-state full-covariance model gives an interpretable
+progression from lower to intermediate to higher volatility and
+cross-asset dispersion.
+
+At the same time, the initialization and higher-state sensitivity
+experiments show that latent-state conclusions depend on model
+specification and optimization.
+
+The HMM stage is therefore treated as a validated statistical modeling
+component of the project rather than as proof that financial markets
+possess a fixed or uniquely identifiable set of regimes.

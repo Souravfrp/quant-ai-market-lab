@@ -104,6 +104,58 @@ using the Adjusted Rand Index (ARI).
 - scikit-learn documentation: `adjusted_rand_score`
   https://scikit-learn.org/stable/modules/generated/sklearn.metrics.adjusted_rand_score.html
 
+## Hidden Markov Models
+
+### HMM Methodology
+
+The temporal regime experiment uses a Gaussian Hidden Markov Model (HMM)
+to represent an observed market-feature sequence through an underlying
+sequence of latent states with transition probabilities and
+state-dependent Gaussian emissions.
+
+A standard methodological reference for the HMM framework, likelihood
+evaluation, state decoding, and parameter estimation is:
+
+- Rabiner, L. R. (1989).
+  "A Tutorial on Hidden Markov Models and Selected Applications in
+  Speech Recognition."
+  *Proceedings of the IEEE*, 77(2), 257-286.
+  DOI: 10.1109/5.18626
+
+### Gaussian HMM Implementation
+
+The implementation uses `hmmlearn.hmm.GaussianHMM`.
+
+The project uses the library for:
+
+- Gaussian-emission HMM fitting,
+- full and diagonal covariance specifications,
+- sequence log-likelihood evaluation,
+- Viterbi state decoding,
+- posterior state probabilities,
+- and convergence diagnostics.
+
+- hmmlearn documentation:
+  https://hmmlearn.readthedocs.io/
+
+- GaussianHMM API documentation:
+  https://hmmlearn.readthedocs.io/en/stable/api.html
+
+### Model Comparison
+
+Candidate HMM specifications are compared using multiple random
+initializations, sequence likelihood, AIC, BIC, chronological validation,
+rolling-origin validation, and state-occupancy diagnostics.
+
+The use of multiple initializations and AIC/BIC for Gaussian HMM model
+comparison is also illustrated in the official hmmlearn documentation:
+
+- hmmlearn example: Using AIC and BIC for Model Selection
+  https://hmmlearn.readthedocs.io/en/stable/auto_examples/plot_gaussian_model_selection.html
+
+The project's manual Gaussian-HMM parameter count was additionally checked
+against the parameter-count implementation in the installed `hmmlearn`
+version 0.3.3 before documenting the AIC and BIC calculations.
 
 ## Attribution Principle
 

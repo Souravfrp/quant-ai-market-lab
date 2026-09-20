@@ -906,6 +906,113 @@ def compare_hmm_specifications(scaled_features):
     return results
 
 
+
+def plot_three_state_hmm_geometry(features, states, state_means):
+    """Plot the primary three-state HMM in 3D and three 2D views."""
+
+    from pathlib import Path
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    values = features.to_numpy()
+    states = np.asarray(states)
+    state_means = np.asarray(state_means)
+
+    if values.shape[1] != 3:
+        raise ValueError("Expected exactly three features.")
+    if len(states) != len(values):
+        raise ValueError("State labels must match observations.")
+    if state_means.shape != (3, 3):
+        raise ValueError("Expected three means in three dimensions.")
+
+    names = list(features.columns)
+    colors = ["tab:blue", "tab:orange", "tab:green"]
+
+    fig = plt.figure(figsize=(15, 11))
+    ax3d = fig.add_subplot(2, 2, 1, projection="3d")
+    ax12 = fig.add_subplot(2, 2, 2)
+    ax13 = fig.add_subplot(2, 2, 3)
+    ax23 = fig.add_subplot(2, 2, 4)
+
+    for state in range(3):
+        mask = states == state
+        points = values[mask]
+        mean = state_means[state]
+        color = colors[state]
+        label = f"State {state} (n={mask.sum()})"
+
+        ax3d.scatter(
+            points[:, 0], points[:, 1], points[:, 2],
+            s=7, alpha=0.30, color=color, label=label,
+        )
+        ax3d.scatter(
+            mean[0], mean[1], mean[2],
+            marker="X", s=130, color=color,
+            edgecolor="black", linewidth=0.8,
+        )
+
+        for ax, i, j in [
+            (ax12, 0, 1),
+            (ax13, 0, 2),
+            (ax23, 1, 2),
+        ]:
+            ax.scatter(
+                points[:, i], points[:, j],
+                s=7, alpha=0.30, color=color,
+            )
+            ax.scatter(
+                mean[i], mean[j],
+                marker="X", s=110, color=color,
+                edgecolor="black", linewidth=0.8,
+            )
+
+    ax3d.set(
+        xlabel=names[0], ylabel=names[1], zlabel=names[2],
+        title="Full 3D feature space",
+    )
+
+    for ax, i, j, title in [
+        (ax12, 0, 1, "Return vs Volatility"),
+        (ax13, 0, 2, "Return vs Dispersion"),
+        (ax23, 1, 2, "Volatility vs Dispersion"),
+    ]:
+        ax.set(
+            xlabel=names[i],
+            ylabel=names[j],
+            title=title,
+        )
+        ax.grid(alpha=0.2)
+
+    fig.suptitle(
+        "Three-State Gaussian HMM: Feature-Space Geometry",
+        fontsize=15,
+    )
+    fig.legend(
+        *ax3d.get_legend_handles_labels(),
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.95),
+        ncol=3,
+    )
+    fig.text(
+        0.5, 0.015,
+        "Colors: full-sequence decoded HMM states. "
+        "X markers: fitted Gaussian state means. "
+        "States are statistical descriptions, not live predictions.",
+        ha="center", fontsize=9,
+    )
+    fig.tight_layout(rect=[0, 0.04, 1, 0.92])
+
+    output = (
+        Path(__file__).resolve().parents[1]
+        / "results"
+        / "hmm_three_state_geometry.png"
+    )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+    print("Saved:", output)
+
+
 if __name__ == "__main__":
     features, scaled_features, scaler = prepare_hmm_data()
 
@@ -1045,6 +1152,12 @@ if __name__ == "__main__":
                 f"  {feature_name}: "
                 f"{value:.6f}"
             )
+
+    plot_three_state_hmm_geometry(
+        features,
+        primary_states,
+        primary_means,
+    )
 
     primary_durations = expected_state_durations(
         primary_model

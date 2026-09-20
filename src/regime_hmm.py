@@ -378,6 +378,50 @@ def plot_hmm_state_timeline(states, index):
     print("Saved:", output_path)
 
 
+
+
+def plot_three_state_hmm_timeline(states, index):
+    """
+    Plot the decoded three-state HMM through historical time.
+    """
+    from pathlib import Path
+    import numpy as np
+
+    results_dir = Path(__file__).resolve().parents[1] / "results"
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    states = np.asarray(states)
+
+    plt.figure(figsize=(12, 3.5))
+
+    for state in range(3):
+        mask = states == state
+
+        plt.scatter(
+            index[mask],
+            states[mask],
+            s=10,
+            alpha=0.7,
+            label=f"State {state}",
+        )
+
+    plt.yticks(
+        range(3),
+        [f"State {k}" for k in range(3)],
+    )
+    plt.xlabel("Date")
+    plt.ylabel("Decoded HMM state")
+    plt.title("Three-State HMM: Full-Sequence Historical Decoding")
+    plt.legend(loc="upper left", bbox_to_anchor=(1.01, 1.0))
+    plt.grid(axis="x", alpha=0.25)
+    plt.tight_layout()
+
+    output_path = results_dir / "hmm_three_state_timeline.png"
+    plt.savefig(output_path, dpi=160, bbox_inches="tight")
+    plt.close()
+
+    print("Saved:", output_path)
+
 def count_hmm_parameters(
     n_states,
     n_features,
@@ -1157,6 +1201,11 @@ if __name__ == "__main__":
         features,
         primary_states,
         primary_means,
+    )
+
+    plot_three_state_hmm_timeline(
+        primary_states,
+        features.index,
     )
 
     primary_durations = expected_state_durations(

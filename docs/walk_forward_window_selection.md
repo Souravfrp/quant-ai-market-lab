@@ -79,3 +79,117 @@ Generate the candidate forecasts using
 `python -m src.walk_forward_evaluation`
 
 The evaluation reads `results/walk_forward_forecasts.csv`.
+
+## May–August 2026 fixed-cutoff evaluation
+
+The original historical evaluation ended with forecasts dated
+2026-04-23: their complete five-trading-day targets were observable
+by the 2026-04-30 cutoff. The extended forecast timeline additionally
+contains forecasts dated 2026-04-24 through 2026-04-30. These five
+forecasts were not included in the original historical scores, but
+their outcomes become available during May and can subsequently enter
+the adaptive selector's completed-error history.
+
+The later evaluation covers 79 forecast dates, 2026-05-01 through
+2026-08-24. The final five-day target becomes observable on
+2026-08-31, the last date in the available return dataset.
+
+The candidate methods and selection rule were retained from the
+historical experiment: rolling windows of 252, 504, 756, and 1008
+eligible training examples; an expanding window; Ridge alpha of 1;
+monthly refitting; and adaptive selection using the most recent
+252 completed forecast errors. Forecasts are interpreted as being
+made after the close of each forecast date. Monthly refits can use
+training outcomes observable by that date, rather than freezing all
+model coefficients at the April cutoff.
+
+The adaptive selections were:
+
+| Selection date | Selected method |
+| --- | --- |
+| 2026-05-01 | Rolling 504 |
+| 2026-06-01 | Rolling 504 |
+| 2026-07-01 | Expanding |
+| 2026-08-03 | Rolling 756 |
+
+All six methods were evaluated on the same 79 later forecast dates.
+
+| Method | MAE | RMSE | Mean forecast error |
+| --- | ---: | ---: | ---: |
+| Rolling 252 | 0.002604 | 0.003220 | +0.000026 |
+| Rolling 504 | 0.002969 | 0.003484 | +0.000962 |
+| Rolling 756 | 0.002875 | 0.003414 | +0.000771 |
+| Rolling 1008 | 0.002980 | 0.003494 | +0.001072 |
+| Expanding | 0.003082 | 0.003732 | +0.001371 |
+| Adaptive | 0.002954 | 0.003529 | +0.001050 |
+
+Rolling 252 had the lowest observed MAE and RMSE in this later
+period. Adaptive had lower MAE and RMSE than expanding, reversing
+their aggregate relationship in the earlier historical evaluation.
+These observations do not justify revising the candidate methods or
+adaptive selection rule based on the later-period outcomes.
+
+This is a fixed-cutoff, pseudo-out-of-sample walk-forward evaluation,
+not a pristine untouched holdout: some May–August information had
+previously been inspected during project development. The 79
+forecast errors are also dependent because successive five-day
+targets overlap. No uncertainty interval has been established for
+the differences between methods.
+
+### Reproduction of the later evaluation
+
+Run `python -m src.later_walk_forward_evaluation`.
+
+The module rebuilds the extended forecasts, checks the original
+historical forecasts on their 1811 saved dates, verifies the later
+adaptive selections, and compares the later predictions against
+`results/later_walk_forward_forecasts.csv` before printing the scores.
+It does not overwrite the original historical forecast CSV.
+
+## April 2020 diagnostic
+
+The adaptive selector chose rolling 756 at its 2020-04-01
+selection date using the most recent 252 completed historical
+forecast errors. Its choice did not use April forecast outcomes.
+
+Across the 21 April 2020 forecast dates, rolling 756 had an
+MAE of 0.020607, compared with 0.017249 for expanding.
+Both methods overpredicted the realized five-day RMS target
+on all 21 dates; rolling 756 produced a larger absolute
+error on every date.
+
+To examine the prediction difference, both Ridge models were
+reconstructed using their eligible training examples at the
+2020-04-01 refit. Their fitted coefficients were converted
+from standardized feature coordinates to the same original
+feature coordinates. For each April forecast date, the
+rolling-minus-expanding prediction difference was decomposed as
+
+    (a_rolling - a_expanding)
+    + sum_j (b_rolling,j - b_expanding,j) * x_t,j
+
+where a denotes the intercept, b denotes original-coordinate
+feature slopes, and x_t denotes the observed feature vector.
+
+The mean contributions across April were:
+
+| Component | Mean contribution |
+| --- | ---: |
+| Intercept | -0.000382 |
+| SPY return | +0.000094 |
+| SPY 20-day volatility | -0.000245 |
+| Cross-asset dispersion | +0.003890 |
+| Total forecast difference | +0.003358 |
+
+The reconstructed and direct prediction differences agreed
+within numerical tolerance. Cross-asset dispersion supplied
+the largest positive term in this algebraic decomposition,
+partly offset by the intercept and volatility terms.
+
+This analysis explains how the fitted models produced different
+forecasts. It does not establish that cross-asset dispersion
+caused the subsequent market outcomes or forecast errors.
+
+The reproducible diagnostic is in
+`src/april_2020_ridge_diagnostic.py`; its figure is saved as
+`results/april_2020_ridge_diagnostic.png`.

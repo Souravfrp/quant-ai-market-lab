@@ -19,6 +19,18 @@ convex quadratic optimization problem.
 This is an initial trained model, not a claim that a
 linear model is the correct description of market risk.
 
+For training targets y_i and standardized feature vectors z_i,
+the fitted model minimizes
+
+    sum_i (y_i - beta_0 - z_i^T beta)^2
+    + alpha * ||beta||_2^2
+
+over the intercept beta_0 in R and the slope vector beta in R^3.
+The intercept is not penalized. This is a convex quadratic
+optimization problem in four model parameters. The fitted
+objective is penalized training squared error; the later
+validation MAE and RMSE are separate evaluation metrics.
+
 ## Inputs and fitting
 
 Features: current SPY log return, SPY 20-day rolling
@@ -27,8 +39,14 @@ sample volatility, and cross-asset return dispersion.
 The feature scaler and Ridge coefficients are fitted
 on the 2,253 internal training examples only.
 
-The regularization setting `alpha=1.0` is provisional;
-it has not been selected through hyperparameter tuning.
+The original model used `alpha=1.0` provisionally.
+A subsequent training-only study compared alpha values
+0, 1, 10, 100, and 1000 using three chronological folds.
+Alpha values 0, 1, and 10 produced nearly identical mean
+fold MAE at the reported precision. We retained alpha=1
+as a reproducible, weakly regularized setting, not as a
+uniquely established optimum. See
+`docs/ridge_alpha_validation.md`.
 
 ## Historical validation
 
@@ -57,10 +75,19 @@ causal effects.
 Ridge does not enforce nonnegative predictions generally,
 even though this validation run produced none.
 
-We have not selected an optimal regularization strength
-or evaluated this Ridge model on the later May-August 2026
-period. That later period has already been inspected
-during earlier baseline analysis and is not an untouched
-holdout. It must not be used to choose model settings.
+This original fixed-fit Ridge model has not been
+separately evaluated on the May-August 2026 period.
+The subsequent walk-forward experiment instead refits
+Ridge monthly under fixed rolling and expanding training
+histories, with an additional past-error-based adaptive
+selector. Its later-period results must not be attributed
+to the original fixed-fit model. See
+`docs/walk_forward_window_selection.md`.
+
+Some May-August 2026 information was inspected during
+project development; the later walk-forward evaluation
+is therefore not an untouched holdout. Its outcomes
+must not be used to revise the model settings while
+presenting the same period as independent confirmation.
 
 Run: `python -m src.ridge_risk_forecasting`

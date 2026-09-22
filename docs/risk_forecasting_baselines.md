@@ -15,11 +15,14 @@ conventional sample standard deviation.
 - Internal training: 2,253 eligible examples.
 - Internal validation: 565 examples, starting 2024-01-23.
 - Fixed historical cutoff: 2026-04-30.
-- Later evaluation: 79 eligible forecast dates.
+- A separate, subsequent walk-forward Ridge experiment evaluates
+  79 forecast dates from 2026-05-01 through 2026-08-24.
 
 Training examples whose five-day target windows enter
-validation are excluded. Later-period results are not
-used to select the forecasting model.
+validation are excluded. The 79-date results belong to the
+monthly-refitted Ridge methods, not to a later evaluation
+of the two baselines reported in this note. See
+`docs/walk_forward_window_selection.md`.
 
 ## Baselines
 

@@ -2530,3 +2530,366 @@ specification and optimization.
 The HMM stage is therefore treated as a validated statistical modeling
 component of the project rather than as proof that financial markets
 possess a fixed or uniquely identifiable set of regimes.
+
+## 12. Five-Day SPY Risk Forecasting
+
+### 12.1 Forecast Target and Information Timing
+
+The forecasting question is:
+
+> Given market information observed by the close of trading day
+> \(t\), what will be the RMS magnitude of SPY's daily log returns
+> over the next five trading days?
+
+Let \(r_t\) denote SPY's daily log return at trading date \(t\).
+The forecasting target is
+
+\[
+y_t =
+\sqrt{\frac{1}{5}\sum_{j=1}^{5}r_{t+j}^{\,2}}.
+\]
+
+The target measures the magnitude of future daily return movements,
+not their direction. It is a root mean square around zero, not a
+sample standard deviation around the five-day sample mean.
+
+Our forecast is made after the close on date \(t\). At that time,
+the current SPY return, trailing 20-day SPY volatility, and
+same-day cross-asset return dispersion are available as inputs.
+The five future returns in \(y_t\) are not yet known.
+
+If trading date \(t+5\) is the fifth subsequent trading date,
+the target \(y_t\) becomes observable only after the close on
+that date. Accordingly, a training example indexed by \(s\)
+may enter a model refit on date \(t\) only if its fifth future
+trading date is no later than \(t\).
+
+For the original historical evaluation cutoff of 2026-04-30,
+the last forecast date with a fully observable target was
+2026-04-23. The extended May-August evaluation contains
+79 forecast dates from 2026-05-01 through 2026-08-24;
+the last target becomes observable on 2026-08-31.
+
+Consecutive targets overlap: \(y_t\) and \(y_{t+1}\) share four
+daily returns. Their associated forecast errors therefore
+cannot generally be treated as independent observations.
+
+### 12.2 Ridge Regression as a Convex Quadratic Problem
+
+#### Model and parameter dimension
+
+At the close of trading date \(t\), define the three-feature vector
+
+\[
+x_t =
+\begin{pmatrix}
+r_{\mathrm{SPY},t}\\
+\sigma_{\mathrm{SPY},t}^{(20)}\\
+d_t
+\end{pmatrix}
+\in \mathbb{R}^3.
+\]
+
+The forecasting model uses these observed features directly. The
+descriptive PCA directions and inferred HMM states are not inputs
+to the current Ridge forecasting experiment.
+
+For a given fit, the training-only `StandardScaler` transforms
+\(x_t\) into \(z_t\). Ridge then predicts
+
+\[
+\widehat y_t=\beta_0+z_t^\top\beta,
+\]
+
+where \(\beta_0\in\mathbb{R}\) is the intercept and
+\(\beta\in\mathbb{R}^3\) contains the three feature slopes.
+
+Thus, the input space is three-dimensional, while the complete
+parameter vector \((\beta_0,\beta)\) belongs to \(\mathbb{R}^4\).
+
+#### Optimization objective
+
+Let \(\mathcal I\) be the set of eligible training dates at a
+particular fit, and let \(N=|\mathcal I|\). The implementation
+uses scikit-learn Ridge with an unpenalized intercept:
+
+\[
+\boxed{
+\min_{\beta_0\in\mathbb{R},\,\beta\in\mathbb{R}^3}
+\left[
+\sum_{t\in\mathcal I}
+(y_t-\beta_0-z_t^\top\beta)^2
++\alpha\|\beta\|_2^2
+\right].
+}
+\]
+
+Our retained setting is \(\alpha=1\). The objective is the sum
+of squared *training* residuals plus an L2 penalty on the slopes.
+The training sum is not divided by \(N\) in this formulation.
+
+The penalty discourages large standardized-feature coefficients;
+it does not impose a hard coefficient constraint. MAE and RMSE
+are calculated afterward to evaluate forecasts and are not the
+objective minimized by this Ridge fit.
+
+#### Convexity and solution
+
+Let \(Z\in\mathbb{R}^{N\times3}\) be the standardized training
+design matrix, and let \(y\in\mathbb{R}^N\) be the training
+target vector. For fixed \(Z\) and \(y\), the objective is
+quadratic in \((\beta_0,\beta)\).
+
+For \(\alpha>0\), its quadratic variation in a parameter
+direction \((u_0,u)\) is
+
+\[
+2\|\mathbf{1}u_0+Zu\|_2^2
++2\alpha\|u\|_2^2.
+\]
+
+For any nonzero parameter direction and \(N>0\), this
+quantity is strictly positive. Therefore, the objective
+is strictly convex and has a unique global minimizer.
+
+A numerical optimizer or linear-algebra solver finds this
+minimizer; changing an iterative initialization cannot
+produce a distinct local optimum of the same Ridge objective.
+
+#### Interpretation and limitations
+
+The predicted target is a magnitude and is therefore
+nonnegative by definition. Ordinary Ridge regression does
+not constrain \(\widehat y_t\geq0\), although no negative
+predictions occurred in the original historical validation.
+
+The fitted coefficients describe statistical associations
+within the selected features and training period. They do
+not establish causal effects or guarantee that subsequent
+forecasting errors will be small.
+
+### 12.3 Walk-Forward Refitting and Training Windows
+
+#### Why refit chronologically?
+
+The original Ridge experiment fitted one model and evaluated it on a
+subsequent historical validation block. The walk-forward experiment
+instead repeats model fitting at the first eligible forecast date
+of each month.
+
+This represents a forecasting process in which the information
+available for training grows as later trading outcomes become known.
+It also allows us to investigate whether retaining all available
+history or emphasizing more recent observations changes forecast
+accuracy.
+
+#### Eligible training dates
+
+Let \(\tau\) be a monthly refit date, and let \(e(s)\) denote the
+trading date on which the five-day target for forecast date \(s\)
+becomes fully observable.
+
+The eligible training-date set is
+
+\[
+\mathcal I_\tau
+=
+\{s:\ s<\tau,\ e(s)\leq\tau,\ y_s
+\text{ is available}\}.
+\]
+
+The strict condition \(s<\tau\) excludes the current forecast
+date from its own training sample. The condition
+\(e(s)\leq\tau\) prevents training on a target containing
+returns that have not yet been observed.
+
+This definition assumes that monthly refitting and forecasting
+occur after the close on date \(\tau\).
+
+#### Fixed rolling and expanding training windows
+
+Write the eligible dates in chronological order as
+
+\[
+\mathcal I_\tau
+=
+(s_1,\ldots,s_{N_\tau}).
+\]
+
+For a rolling window of \(W\) eligible examples, the training
+dates at refit \(\tau\) are
+
+\[
+\mathcal I_{\tau,W}
+=
+(s_{N_\tau-W+1},\ldots,s_{N_\tau}),
+\qquad N_\tau\geq W.
+\]
+
+The experiment compares
+
+\[
+W\in\{252,504,756,1008\}.
+\]
+
+The expanding-window method instead uses all eligible dates:
+
+\[
+\mathcal I_{\tau,\mathrm{expanding}}
+=
+\mathcal I_\tau.
+\]
+
+Each candidate fits its own training-only feature scaler and
+Ridge model with \(\alpha=1\). Within a month, the fitted
+scaler and coefficients remain fixed while newly observed
+daily features generate fresh predictions. The models are
+refitted on the next monthly refit date.
+
+A rolling window of \(W\) denotes \(W\) eligible training
+examples, not necessarily the most recent \(W\) consecutive
+trading dates: the latest observations may be excluded
+because their complete five-day targets are not yet known.
+
+### 12.4 Adaptive Selection Using Completed Forecast Errors
+
+The adaptive method selects among five existing Ridge candidates:
+rolling windows of 252, 504, 756, and 1008 eligible training
+examples, and the expanding window. It does not fit a sixth
+Ridge model.
+
+Let \(\mathcal M\) denote this candidate set. At the first eligible
+forecast date \(\tau\) of each month, consider earlier forecast
+dates \(s<\tau\) for which the actual five-day target has become
+observable by the close on \(\tau\). The selector uses the most
+recent 252 such completed forecast dates for which all candidate
+predictions are available. Denote this common set by
+\(\mathcal C_\tau\), with \(|\mathcal C_\tau|=252\).
+Adaptive selection begins only once this full common
+history is available.
+
+For candidate \(m\in\mathcal M\), define its past error score by
+
+\[
+A_m(\tau)
+=
+\frac{1}{|\mathcal C_\tau|}
+\sum_{s\in\mathcal C_\tau}
+|y_s-\widehat y_{s,m}|.
+\]
+
+Here, \(\widehat y_{s,m}\) is the prediction candidate \(m\)
+actually produced for date \(s\) under the historical
+walk-forward procedure. The selector chooses
+
+\[
+m_\tau^*
+=
+\operatorname*{arg\,min}_{m\in\mathcal M}
+A_m(\tau).
+\]
+
+Ties follow a fixed, deterministic candidate order. The
+selected candidate supplies the adaptive predictions
+throughout that month; the selection is reconsidered at
+the next monthly refit date.
+
+The score uses only targets completed by the selection
+date. In particular, a forecast whose five-day horizon
+extends beyond \(\tau\) cannot contribute to
+\(\mathcal C_\tau\), even if its prediction was already made.
+
+The adaptive method minimizes *past observed MAE across
+candidate forecasts* when choosing a model. Each candidate's
+Ridge coefficients were separately obtained by minimizing
+its penalized training squared-error objective. Neither
+optimization guarantees the lowest MAE in a subsequent
+evaluation period.
+
+Because adjacent five-day targets overlap, the 252 completed
+forecast errors need not be statistically independent.
+
+### 12.5 Forecast Evaluation and Limitations
+
+#### Error measures
+
+For an evaluation set \(\mathcal T\) of \(n\) forecast dates,
+define the error of a forecasting method \(m\) by
+
+\[
+e_{t,m}=\widehat y_{t,m}-y_t.
+\]
+
+We report three aggregate measures:
+
+\[
+\operatorname{MAE}_m
+=
+\frac{1}{n}\sum_{t\in\mathcal T}|e_{t,m}|,
+\]
+
+\[
+\operatorname{RMSE}_m
+=
+\sqrt{\frac{1}{n}
+\sum_{t\in\mathcal T}e_{t,m}^{\,2}},
+\]
+
+\[
+\operatorname{MeanError}_m
+=
+\frac{1}{n}\sum_{t\in\mathcal T}e_{t,m}.
+\]
+
+MAE measures average absolute prediction error; RMSE gives
+greater weight to large errors. Mean error describes the
+direction of average forecast bias under this sign convention:
+positive values indicate overprediction on average, while
+negative values indicate underprediction on average.
+
+These evaluation measures are distinct from the penalized
+training squared-error objective of Ridge regression.
+
+#### Evaluation periods
+
+The historical comparison of all five Ridge candidates and
+the adaptive selector uses 1,545 common forecast dates from
+2020-03-02 through 2026-04-23.
+
+The later comparison uses 79 forecast dates from 2026-05-01
+through 2026-08-24, with complete targets observed by
+2026-08-31. The later predictions retain the historical
+walk-forward chronology, including eligible observations
+whose target completion dates fall between the original
+historical cutoff and the start of May.
+
+The later period is a fixed-cutoff pseudo-out-of-sample
+evaluation, not an untouched holdout: its outcomes were
+examined during earlier stages of this project. We therefore
+report its results descriptively rather than treating it
+as independent confirmation of a model-selection decision.
+
+The detailed candidate comparisons, monthly selections,
+and April 2020 diagnostic are recorded in
+`docs/walk_forward_window_selection.md`.
+
+#### Statistical and modeling limitations
+
+Five-day targets at adjacent forecast dates share four
+daily returns. Consequently, daily forecast errors can
+be dependent, and the number of forecast dates should
+not be interpreted as the number of independent outcomes.
+The 79-date later period is also short relative to the
+range of market conditions a forecasting method may encounter.
+
+The adaptive selector chooses a candidate using past
+completed errors. It does not guarantee that the chosen
+candidate will have the smallest subsequent error, and
+the observed comparison does not establish a universally
+preferred training-window length.
+
+These forecasts concern the future magnitude of SPY's
+daily returns. They do not predict return direction,
+portfolio returns, or the profitability of a trading
+strategy. Portfolio construction and backtesting require
+separate objectives, assumptions, and evaluation.

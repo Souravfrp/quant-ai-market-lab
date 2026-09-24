@@ -380,7 +380,8 @@ def run_backtest(
     Existing holdings earn their daily returns
     before the next allocation is executed.
 
-    Transaction costs are excluded.
+    Proportional transaction costs are applied at execution
+    when cost_bps is nonzero.
     """
 
     dates = historical.index

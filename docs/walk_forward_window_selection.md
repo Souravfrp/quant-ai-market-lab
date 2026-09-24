@@ -193,3 +193,51 @@ caused the subsequent market outcomes or forecast errors.
 The reproducible diagnostic is in
 `src/april_2020_ridge_diagnostic.py`; its figure is saved as
 `results/april_2020_ridge_diagnostic.png`.
+
+
+## Coefficient stability of the rolling 504 model
+
+I also examined how the fitted coefficients of the rolling
+504-observation Ridge model changed across its 87 monthly refits,
+from 2019-02-08 to 2026-04-01. I used the same historical
+training-date schedule and Ridge parameter as in the walk-forward
+experiment.
+
+All 87 refits gave a negative coefficient for the current SPY log
+return and positive coefficients for trailing SPY volatility and
+cross-asset dispersion. The signs were consistent, although the
+coefficient magnitudes varied.
+
+| Feature | Minimum standardized coefficient | Median | Maximum |
+| --- | ---: | ---: | ---: |
+| SPY log return | -0.001806 | -0.001057 | -0.000397 |
+| SPY 20-day volatility | 0.000497 | 0.002785 | 0.005331 |
+| Cross-asset dispersion | 0.000051 | 0.000755 | 0.004068 |
+
+Because the feature scaler was fitted again at each monthly refit,
+I also converted the coefficients to the original feature units.
+For each refit, I used
+
+\[
+b_j = \frac{\beta_j}{s_j},
+\qquad
+a = \beta_0 - \sum_j b_j\mu_j,
+\]
+
+where \(\beta_j\) is the coefficient for a standardized feature,
+and \(\mu_j\) and \(s_j\) are that refit's training mean and scale.
+The resulting expression, \(a+\sum_j b_jx_j\), reproduced the fitted
+model's prediction on each refit date. The maximum absolute
+reconstruction difference across the 87 dates was
+\(6.939\times10^{-18}\).
+
+This analysis shows that the directions of the fitted relationships
+were consistent across these historical refits, while their
+magnitudes were not constant. It covers the rolling 504-observation
+specification only. The coefficients describe the model's
+predictions conditional on its other inputs; they do not establish
+causal relationships or guarantee the same signs in future refits.
+
+To reproduce this analysis, run:
+
+`python -m src.ridge_coefficient_stability`

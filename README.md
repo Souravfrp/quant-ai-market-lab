@@ -2,7 +2,7 @@
 
 An ongoing quantitative research project exploring cross-asset market data through statistical analysis, numerical linear algebra, and reproducible computational methods, with planned extensions to machine learning and portfolio optimization.
 
-> **Project Status:** Active development. Completed stages currently include validated market-data ingestion, return analysis, volatility and dependence analysis, covariance estimation, Principal Component Analysis (PCA), a fixed-cutoff temporal research split, market-regime feature construction, a validated KMeans geometric baseline, and Gaussian Hidden Markov Model (HMM) temporal latent-state analysis with chronological validation. Predictive risk modeling, portfolio optimization, backtesting, explainability, and an interactive application remain planned extensions.
+> **Project Status:** Active development. Completed research includes market-data validation, return analysis, covariance estimation, PCA, market-regime analysis, SPY risk forecasting, chronological walk-forward evaluation, portfolio optimization, historical backtesting, benchmark comparisons, transaction-cost analysis, and subperiod robustness testing.
 
 ## Motivation
 

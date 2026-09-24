@@ -157,6 +157,90 @@ The project's manual Gaussian-HMM parameter count was additionally checked
 against the parameter-count implementation in the installed `hmmlearn`
 version 0.3.3 before documenting the AIC and BIC calculations.
 
+
+## Portfolio Optimization and Historical Backtesting
+
+### Minimum-Variance Portfolio Optimization
+
+The project minimizes estimated portfolio variance subject to
+long-only and fully invested constraints.
+
+The covariance-based portfolio formulation is related to:
+
+- Markowitz, H. (1952).
+  "Portfolio Selection."
+  The Journal of Finance, 7(1), 77-91.
+  DOI: https://doi.org/10.2307/2975974
+
+The project uses its own eight-ETF universe, historical
+estimation windows, trading conventions, and validation
+procedures. It does not implement a complete expected-return
+mean-variance efficient-frontier study.
+
+### Convex Optimization Software
+
+The minimum-variance quadratic program is formulated
+using CVXPY and solved using OSQP.
+
+- CVXPY documentation:
+  https://www.cvxpy.org/
+
+- OSQP documentation:
+  https://osqp.org/docs/
+
+### Covariance Estimation and Return Transformations
+
+The historical portfolio experiment estimates sample
+covariance matrices from daily simple returns.
+
+- pandas DataFrame.cov documentation:
+  https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.cov.html
+
+- pandas DataFrame.pct_change documentation:
+  https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.pct_change.html
+
+- NumPy expm1 documentation:
+  https://numpy.org/doc/stable/reference/generated/numpy.expm1.html
+
+The historical backtest converts previously computed
+daily log returns into simple returns using NumPy expm1.
+
+### Historical Backtesting and Transaction Costs
+
+The project uses monthly portfolio decisions followed by
+next-session closing-price execution.
+
+Transaction costs are modeled as a proportional expense
+on absolute traded notional.
+
+The chronological execution convention, self-financing
+transaction-cost equation, and numerical validation
+procedures are documented in:
+
+- docs/portfolio_mathematics_and_validation.md
+
+The corresponding implementations are:
+
+- src/portfolio_optimization.py
+- src/portfolio_backtest.py
+- src/portfolio_benchmarks.py
+
+### Subperiod Robustness
+
+The historical evaluation is divided into four subperiods
+to examine the variation of portfolio performance across
+different market conditions.
+
+The experimental design, numerical results, reconciliation
+checks, and limitations are documented in:
+
+- docs/portfolio_robustness_findings.md
+- docs/portfolio_mathematics_and_validation.md
+
+The corresponding implementation is:
+
+- src/portfolio_robustness.py
+
 ## Attribution Principle
 
 External ideas, datasets, software, documentation, and adapted

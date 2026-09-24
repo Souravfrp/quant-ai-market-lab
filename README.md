@@ -1,6 +1,6 @@
 # Quant AI Market Lab
 
-An ongoing quantitative research project exploring cross-asset market data through statistical analysis, numerical linear algebra, and reproducible computational methods, with planned extensions to machine learning and portfolio optimization.
+An ongoing quantitative research project exploring cross-asset market data through statistical analysis, numerical linear algebra, predictive risk modeling, convex portfolio optimization, and reproducible computational methods.
 
 > **Project Status:** Active development. Completed research includes market-data validation, return analysis, covariance estimation, PCA, market-regime analysis, SPY risk forecasting, chronological walk-forward evaluation, portfolio optimization, historical backtesting, benchmark comparisons, transaction-cost analysis, and subperiod robustness testing.
 
@@ -8,7 +8,7 @@ An ongoing quantitative research project exploring cross-asset market data throu
 
 This project develops an end-to-end quantitative research workflow from historical market data to mathematically formulated and computationally validated analysis.
 
-The current stage focuses on understanding cross-asset return and risk structure before introducing predictive models or trading strategies. Mathematical formulations, algorithmic considerations, numerical validation, and limitations are documented alongside the implementation.
+The project develops cross-asset return and risk analysis, market-regime models, predictive risk forecasts, and historical minimum-variance portfolio experiments. Mathematical formulations, algorithmic considerations, numerical validation, and limitations are documented alongside the implementation.
 
 ## Asset Universe
 
@@ -83,7 +83,7 @@ $$
 \mathrm{Var}(r_p)=w^\top\Sigma w.
 $$
 
-This covariance structure will later support portfolio-risk optimization.
+This covariance structure supports the minimum-variance portfolio optimization implemented in the project.
 
 ### 5. Principal Component Analysis
 
@@ -230,9 +230,11 @@ full-covariance model is therefore retained as a **parsimonious and
 interpretable specification**, not as evidence that financial markets
 contain exactly three true regimes.
 
-The later May-August 2026 period remains separate from HMM
-model-development decisions and is reserved for the fixed-cutoff temporal
-evaluation stage.
+The later May-August 2026 period was used for fixed-cutoff temporal
+evaluation of the retained HMM. Because this period has already been
+examined during project development, its results are treated as
+retrospective pseudo-out-of-sample evidence rather than as an
+untouched holdout.
 
 
 ## Mathematical and Algorithmic Documentation
@@ -272,23 +274,51 @@ For the current eight-asset universe these computations are small, but the docum
 ```text
 quant-ai-market-lab/
 ├── data/
-│   ├── raw/          # local, ignored by Git
-│   └── processed/    # local, ignored by Git
+│   ├── raw/        # local, ignored by Git
+│   └── processed/  # local, ignored by Git
 ├── docs/
+│   ├── hmm_fixed_cutoff_evaluation.md
 │   ├── mathematics_optimization_algorithms.md
-│   └── references.md
-├── models/           # local model artifacts
+│   ├── portfolio_mathematics_and_validation.md
+│   ├── portfolio_robustness_findings.md
+│   ├── references.md
+│   ├── ridge_alpha_validation.md
+│   ├── ridge_risk_forecasting.md
+│   ├── risk_forecasting_baselines.md
+│   └── walk_forward_window_selection.md
+├── models/         # local model artifacts
 ├── notebooks/
 ├── results/
 ├── src/
-│   ├── download_data.py
+│   ├── adaptive_window_selection.py
+│   ├── april_2020_ridge_diagnostic.py
 │   ├── compute_returns.py
+│   ├── download_data.py
 │   ├── exploratory_analysis.py
+│   ├── later_forecast_plot.py
+│   ├── later_walk_forward_comparison.py
+│   ├── later_walk_forward_evaluation.py
 │   ├── pca_analysis.py
-│   ├── temporal_split.py
-│   ├── regime_features.py
+│   ├── portfolio_backtest.py
+│   ├── portfolio_benchmarks.py
+│   ├── portfolio_optimization.py
+│   ├── portfolio_risk_visualization.py
+│   ├── portfolio_robustness.py
+│   ├── portfolio_visualization.py
 │   ├── regime_clustering.py
-│   └── regime_hmm.py
+│   ├── regime_features.py
+│   ├── regime_hmm.py
+│   ├── regime_hmm_evaluation.py
+│   ├── ridge_alpha_validation.py
+│   ├── ridge_risk_forecasting.py
+│   ├── risk_forecast_comparison.py
+│   ├── risk_forecasting.py
+│   ├── risk_full_history_plot.py
+│   ├── temporal_split.py
+│   ├── walk_forward_comparison.py
+│   ├── walk_forward_dates.py
+│   ├── walk_forward_evaluation.py
+│   └── walk_forward_ridge.py
 ├── .gitignore
 ├── README.md
 └── requirements.txt
@@ -307,27 +337,34 @@ The current Python dependency snapshot is stored in:
 
 Raw and processed market datasets are intentionally excluded from Git version control. The data-ingestion scripts provide the computational route for reconstructing the analysis dataset from the documented data source.
 
-## Planned Development
+## Completed Research and Remaining Development
 
-The next research stages are:
+The completed research includes market-data validation, return and
+covariance analysis, PCA, market-regime modeling, SPY risk forecasting,
+chronological walk-forward evaluation, minimum-variance portfolio
+optimization, historical backtesting, benchmark comparisons,
+transaction-cost analysis, and subperiod robustness testing.
 
-1. evaluate the retained market-state models on the later fixed-cutoff temporal period
+The portfolio methodology, execution assumptions, validation checks,
+historical results, and limitations are documented in:
 
-2. develop volatility/risk forecasting baselines and machine-learning alternatives
+`docs/portfolio_mathematics_and_validation.md`
 
-3. compare predictive models using time-aware validation
+The subperiod findings are documented in:
 
-4. add model explainability where appropriate
+`docs/portfolio_robustness_findings.md`
 
-5. formulate mathematically constrained portfolio-optimization problems
+The remaining development tasks are:
 
-6. perform time-aware backtesting and benchmark comparison
+1. add model explainability where appropriate
+2. investigate additional predictive-model alternatives, with
+   chronological validation
+3. add local generative-AI-assisted quantitative reporting
+4. develop an interactive Streamlit research dashboard
+5. complete the documentation, reproducibility, and validation audit
 
-7. add local generative-AI-assisted quantitative reporting
-
-8. develop an interactive Streamlit research dashboard
-
-These components remain planned work and will not be represented as completed until their implementation and validation are added to the repository.
+These remaining components will be described as completed only after
+their implementations and validations have been added to the repository.
 
 ## Research and Validation Principles
 
@@ -349,6 +386,6 @@ Data sources, mathematical references, software documentation, and external meth
 
 ## Current Scope and Limitations
 
-The current results are descriptive historical analyses and should not be interpreted as investment advice or evidence of a profitable trading strategy.
+The project includes descriptive market analysis, historical risk-forecasting experiments, and retrospective portfolio backtests. These results depend on the selected data, models, evaluation periods, and execution assumptions. They do not establish future predictive performance or a profitable live trading strategy and should not be interpreted as investment advice.
 
 PCA currently uses the full historical sample and is therefore treated as descriptive analysis. Any future predictive or backtesting use of dimensionality reduction will require fitting transformations using only information available at the relevant historical time.

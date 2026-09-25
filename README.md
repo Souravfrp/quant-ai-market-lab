@@ -226,6 +226,125 @@ Models with more states continue to improve likelihood, but they increasingly in
 I use the later May-August 2026 period for fixed-cutoff temporal evaluation of the retained HMM. Since I have already examined this period during development, I treat the results as retrospective pseudo-out-of-sample evidence rather than an untouched holdout.
 
 
+
+## Risk Forecasting: Linear and Nonlinear Models
+
+I define the forecasting target at date \(t\) as the RMS of SPY daily
+log returns over the next five trading days. I keep the same target,
+feature definitions, and chronological validation dates when comparing
+different forecasting methods.
+
+The three current market features are:
+
+- current SPY log return
+- trailing 20-day SPY volatility
+- same-day cross-asset return dispersion
+
+I first compared simple historical baselines with Ridge regression.
+I then added Random Forest as a nonlinear alternative. Its depth and
+minimum-leaf-size settings were selected using chronological folds
+inside the training period rather than using the outer historical
+validation period.
+
+On the common 565-date historical validation period:
+
+| Method | MAE | RMSE |
+| --- | ---: | ---: |
+| Constant baseline | 0.003597 | 0.005924 |
+| Rolling 20-day RMS | 0.003613 | 0.006217 |
+| Ridge, alpha = 1 | 0.003201 | 0.005386 |
+| Random Forest | 0.003443 | 0.005982 |
+
+Ridge had lower MAE and RMSE than Random Forest in this historical
+comparison. Random Forest still improved on the simple baselines in
+MAE. I treat these as results for this dataset, target, and evaluation
+period rather than evidence that one model will generally dominate the
+other.
+
+### Ridge coefficient stability
+
+For the rolling 504-observation Ridge specification, I examined the
+standardized coefficients across 87 monthly refits from 2019-02-08 to
+2026-04-01.
+
+The SPY-return coefficient remained negative in all 87 refits, while
+the trailing-volatility and cross-asset-dispersion coefficients remained
+positive. Their magnitudes changed over time.
+
+![Rolling Ridge Coefficient Stability](results/ridge_504_coefficient_stability.png)
+
+### Linear and nonlinear prediction geometry
+
+With SPY return fixed at its median training value, I vary SPY
+20-day volatility and cross-asset dispersion to visualize a
+two-feature slice of each fitted model.
+
+The Ridge model produces a plane, reflecting its linear structure.
+
+![Ridge Prediction Surface](results/ridge_prediction_surface.png)
+
+The Random Forest produces a piecewise nonlinear surface because its
+trees partition the feature space into regions.
+
+![Random Forest Prediction Surface](results/random_forest_prediction_surface.png)
+
+One fitted tree from the 100-tree forest is shown only to depth 3 so
+that the splitting logic remains readable. It is an illustration of
+one estimator, not a representation of the whole forest.
+
+![Representative Random Forest Tree](results/random_forest_representative_tree.png)
+
+### Random Forest permutation importance
+
+I also measured permutation importance on the same historical
+validation period. Each feature was permuted 50 times while measuring
+the increase in MAE.
+
+| Feature | Mean increase in MAE | Standard deviation |
+| --- | ---: | ---: |
+| SPY 20-day volatility | 0.000624 | 0.000078 |
+| SPY return | 0.000143 | 0.000043 |
+| Cross-asset dispersion | -0.000005 | 0.000012 |
+
+The fitted forest relied most strongly on recent SPY volatility in
+this validation sample. Permuting cross-asset dispersion did not
+measurably worsen MAE. I do not interpret permutation importance as a
+causal measure, and correlated features can share predictive
+information.
+
+![Random Forest Permutation Importance](results/random_forest_permutation_importance.png)
+
+Detailed forecasting notes are in:
+
+- `docs/ridge_risk_forecasting.md`
+- `docs/ridge_alpha_validation.md`
+- `docs/walk_forward_window_selection.md`
+- `docs/random_forest_risk_forecasting.md`
+
+
+## Mathematical, Algorithmic, and Systems Foundations
+
+I use several parts of my mathematics, algorithms, and computer-science
+background together rather than treating the project as a collection of
+unrelated machine-learning models.
+
+| Foundation | How I use it in this project |
+| --- | --- |
+| Probability and statistics | return distributions, volatility, covariance, HMM transitions, likelihood, forecast-error analysis |
+| Linear algebra | covariance matrices, quadratic forms, PCA, eigenvalues and eigenvectors |
+| Convex optimization | Ridge regression and minimum-variance portfolio optimization |
+| Geometry | PCA directions, standardized regime-feature space, KMeans decision geometry, prediction surfaces |
+| Algorithms | clustering, tree-based partitioning, chronological model selection, walk-forward procedures |
+| Numerical analysis | tolerance checks, matrix-property validation, prediction reconstruction, reproducibility checks |
+| Time-series reasoning | chronological splits, observable-target constraints, rolling and expanding windows, look-ahead prevention |
+| Scientific computing | NumPy, pandas, SciPy/scikit-learn, CVXPY, reproducible Python pipelines |
+| Systems and software practice | modular source code, Conda environments, Git versioning, documented scripts and reproducible outputs |
+
+My aim is to make the mathematical assumptions, implementation choices,
+validation rules, and limitations visible enough that the results can
+be questioned and reproduced rather than treated as black-box output.
+
+
 ## Mathematical and Algorithmic Documentation
 
 I keep a separate technical document for the mathematics and algorithms behind the implementation, so that the README can explain the research without hiding the details needed to reproduce or question it. The document covers:
@@ -270,6 +389,7 @@ quant-ai-market-lab/
 │   ├── mathematics_optimization_algorithms.md
 │   ├── portfolio_mathematics_and_validation.md
 │   ├── portfolio_robustness_findings.md
+│   ├── random_forest_risk_forecasting.md
 │   ├── references.md
 │   ├── ridge_alpha_validation.md
 │   ├── ridge_risk_forecasting.md
@@ -284,6 +404,7 @@ quant-ai-market-lab/
 │   ├── compute_returns.py
 │   ├── download_data.py
 │   ├── exploratory_analysis.py
+│   ├── final_model_visualizations.py
 │   ├── later_forecast_plot.py
 │   ├── later_walk_forward_comparison.py
 │   ├── later_walk_forward_evaluation.py
@@ -298,6 +419,9 @@ quant-ai-market-lab/
 │   ├── regime_features.py
 │   ├── regime_hmm.py
 │   ├── regime_hmm_evaluation.py
+│   ├── random_forest_permutation_importance.py
+│   ├── random_forest_risk_forecasting.py
+│   ├── random_forest_validation.py
 │   ├── ridge_alpha_validation.py
 │   ├── ridge_risk_forecasting.py
 │   ├── risk_forecast_comparison.py
@@ -338,16 +462,23 @@ I document the subperiod findings in:
 
 `docs/portfolio_robustness_findings.md`
 
-I still plan to:
+The core quantitative-research workflow is now implemented, including
+linear and nonlinear risk forecasting, chronological model selection,
+model interpretation, regime analysis, portfolio optimization,
+walk-forward backtesting, transaction costs, and robustness analysis.
 
-1. add model explainability where appropriate
-2. investigate additional predictive-model alternatives, with
-   chronological validation
-3. add local generative-AI-assisted quantitative reporting
-4. develop an interactive Streamlit research dashboard
-5. complete the documentation, reproducibility, and validation audit
+Before freezing the first quant-ready release, I am completing a final
+documentation and reproducibility pass.
 
-I will describe these components as completed only after I have implemented and validated them.
+I am deliberately leaving the following as optional future extensions:
+
+1. local generative-AI-assisted quantitative reporting
+2. an interactive Streamlit research dashboard
+3. broader predictive-model experiments beyond the current Ridge and
+   Random Forest comparison
+
+These extensions are not required for the current quantitative-research
+version of the project.
 
 ## Research and Validation Principles
 

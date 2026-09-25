@@ -111,6 +111,46 @@ The experiment therefore provides evidence about whether additional
 model complexity was useful in this particular setting rather than
 assuming that a more complicated model should perform better.
 
+
+## Permutation importance
+
+I also examined how much the fitted Random Forest relied on each
+feature during the same 565-date historical validation period.
+
+For each feature, I permuted its validation values 50 times while
+keeping the fitted model fixed and measured the change in MAE.
+
+| Feature | Mean increase in MAE | Standard deviation |
+| --- | ---: | ---: |
+| SPY 20-day volatility | 0.000624 | 0.000078 |
+| SPY return | 0.000143 | 0.000043 |
+| Cross-asset dispersion | -0.000005 | 0.000012 |
+
+Recent SPY volatility had the largest permutation importance in this
+experiment. SPY return had a smaller positive contribution.
+
+The cross-asset-dispersion result is close to zero relative to its
+permutation variability. I therefore interpret it as showing little
+measurable standalone permutation importance in this validation sample,
+not as evidence that dispersion is economically harmful or irrelevant.
+
+Permutation importance measures the fitted model's reliance on a
+feature conditional on the other available inputs. It does not measure
+causation, and correlated features can share predictive information.
+
+The reproducible analysis is implemented in:
+
+`src/random_forest_permutation_importance.py`
+
+Its numerical output is saved in:
+
+`results/random_forest_permutation_importance.csv`
+
+and the corresponding figure is:
+
+`results/random_forest_permutation_importance.png`
+
+
 ## Limitations
 
 The Random Forest settings were selected from only four candidate

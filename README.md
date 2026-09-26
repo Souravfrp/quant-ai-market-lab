@@ -2,7 +2,7 @@
 
 I built Quant AI Market Lab as an independent research project while moving from mathematics and computer and system sciences into quantitative finance. My master's studies in Mathematics and Computer and System Sciences trained me to reason about probability, algorithms, and optimization. Here I apply those tools to market data while learning the finance needed to judge what the results actually mean.
 
-> **Project status (26 September 2026):** The first quantitative research workflow is complete and ready for a `v1.0.0` freeze after the local reproduction check. It covers validated market data, return analysis, PCA, market-condition models, SPY risk forecasts, chronological evaluation, minimum-variance portfolios, retrospective backtests, benchmarks, costs, and subperiod checks. This is a historical research exercise, not a live strategy. Optional extensions are listed below.
+> **Project status (26 September 2026):** The first quantitative research workflow is complete and tagged `v1.0.0` at commit `d907401`. The portfolio workflow was checked on the saved local data before tagging. It covers validated market data, return analysis, PCA, market-condition models, SPY risk forecasts, chronological evaluation, minimum-variance portfolios, retrospective backtests, benchmarks, costs, and subperiod checks. This is a historical research exercise, not a live strategy. Optional extensions are listed below.
 
 ## Project Summary
 

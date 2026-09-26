@@ -28,12 +28,14 @@ purposes.
 
 ## Software
 
-The project uses open-source Python libraries including NumPy, pandas,
-SciPy, scikit-learn, statsmodels, XGBoost, SHAP, CVXPY, hmmlearn,
-matplotlib, and Streamlit.
+The implemented analysis uses NumPy, pandas, scikit-learn, CVXPY,
+OSQP, hmmlearn, matplotlib, and yfinance, among other Python dependencies.
+The forecasting comparison currently uses Ridge and Random Forest.
+Packages present in an environment snapshot are not necessarily part of
+reported experiments. XGBoost, SHAP, and Streamlit are not results of the
+current research version; they remain possible later extensions.
 
-Specific methodological references will be added in later sections when
-the corresponding techniques are introduced.
+Methodological references appear below and in the relevant project notes.
 
 
 ## Principal Component Analysis

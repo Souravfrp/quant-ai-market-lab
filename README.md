@@ -1,8 +1,8 @@
 # Quant AI Market Lab
 
-I am building Quant AI Market Lab as an independent quantitative research project. My background is in mathematics, algorithms, and computer science, and I am using this project to apply that knowledge to financial data, risk modeling, and portfolio optimization. I am also learning the finance-specific ideas needed to interpret the results carefully.
+I built Quant AI Market Lab as an independent research project while moving from mathematics and computer and system sciences into quantitative finance. My master's studies in Mathematics and Computer and System Sciences trained me to reason about probability, algorithms, and optimization. Here I apply those tools to market data while learning the finance needed to judge what the results actually mean.
 
-> **Project status:** Active development. I have implemented market-data validation, return analysis, covariance estimation, PCA, market-regime analysis, SPY risk forecasting, chronological walk-forward evaluation, portfolio optimization, historical backtesting, benchmark comparisons, transaction-cost analysis, and subperiod robustness testing.
+> **Project status (26 September 2026):** The first quantitative research version is complete. It covers validated market data, return and covariance analysis, PCA, market-condition modeling, SPY risk forecasting, chronological evaluation, minimum-variance portfolio optimization, retrospective backtests, benchmarks, costs, and subperiod checks. The code and results are a historical research exercise, not a live strategy. Further features are listed below as optional extensions.
 
 ## Motivation
 
@@ -23,7 +23,7 @@ I use eight exchange-traded funds (ETFs) to work with different market exposures
 - EEM — emerging-market equities
 - VNQ — U.S. real estate
 
-The data-ingestion configuration requests observations from `2015-01-01` through `2026-09-01`. My validated dataset currently contains observed trading dates from `2015-01-02` through `2026-08-31`.
+I download adjusted prices through `yfinance` (Yahoo Finance data). The data-ingestion configuration requests observations from `2015-01-01` through `2026-09-01`, with the end date excluded. The validated dataset used for the reported results contains trading dates from `2015-01-02` through `2026-08-31`.
 
 ## Completed Work
 
@@ -229,7 +229,7 @@ I use the later May-August 2026 period for fixed-cutoff temporal evaluation of t
 
 ## Risk Forecasting: Linear and Nonlinear Models
 
-I define the forecasting target at date \(t\) as the RMS of SPY daily
+I define the forecasting target at date $t$ as the root mean square (RMS) of SPY daily
 log returns over the next five trading days. I keep the same target,
 feature definitions, and chronological validation dates when comparing
 different forecasting methods.
@@ -322,6 +322,33 @@ Detailed forecasting notes are in:
 - `docs/random_forest_risk_forecasting.md`
 
 
+## Portfolio Optimization and Historical Backtest
+
+I use the eight ETFs to ask a separate question: how do different covariance estimation windows affect a long-only minimum-variance portfolio? The optimizer chooses weights that sum to one and minimize estimated variance. I compare rolling windows of 252, 504, 756, and 1008 trading observations with an expanding window. I then compare them with equal-weight buy-and-hold, monthly equal-weight, and SPY buy-and-hold.
+
+The portfolio backtest uses data through **30 April 2026**, makes 87 month-end decisions from January 2019 to March 2026, and trades at the next session's close in the simulation. Its 1,820 daily return observations run from February 2019 through April 2026. The later May–August 2026 period discussed elsewhere is for SPY risk-forecast evaluation; it is **not** an untouched portfolio holdout. I have examined these portfolio results during development, so the comparisons are retrospective.
+
+At zero modeled transaction cost, 100,000 nominal accounting units grew to:
+
+| Historical method | Final value |
+| --- | ---: |
+| Minimum variance, rolling 252 | 200,065.77 |
+| Minimum variance, rolling 504 | 204,323.60 |
+| Minimum variance, rolling 756 | 208,357.79 |
+| Minimum variance, rolling 1008 | 205,073.73 |
+| Minimum variance, expanding | 195,766.86 |
+| Equal-weight buy-and-hold | 228,956.45 |
+| Equal-weight monthly | 236,838.19 |
+| SPY buy-and-hold | 296,706.25 |
+
+The minimum-variance methods aim to reduce estimated variance, not to maximize return. In this sample, the benchmarks finished with higher values at zero cost. In the four reported subperiods at a 10-basis-point cost assumption, the minimum-variance portfolios had lower realized annualized volatility than the three benchmarks. These are observations about this sample, not a rule for future markets. I also compare 0, 5, and 10 basis points per unit of traded notional and check turnover, transaction expense, and subperiod accounting.
+
+![Portfolio research overview](results/portfolio_research_overview.png)
+
+![Portfolio risk comparison](results/portfolio_risk_comparison.png)
+
+The [portfolio methods and validation](docs/portfolio_mathematics_and_validation.md) explain the objective, timing, accounting, numerical checks, and limitations. The [subperiod findings](docs/portfolio_robustness_findings.md) show where the comparisons vary across time. The nominal units do not represent an INR account.
+
 ## Mathematical, Algorithmic, and Systems Foundations
 
 I use several parts of my mathematics, algorithms, and computer-science
@@ -395,8 +422,8 @@ quant-ai-market-lab/
 │   ├── ridge_risk_forecasting.md
 │   ├── risk_forecasting_baselines.md
 │   └── walk_forward_window_selection.md
-├── models/         # local model artifacts
-├── notebooks/
+├── models/         # local model artifacts, ignored by Git
+├── notebooks/      # local workspace directory
 ├── results/
 ├── src/
 │   ├── adaptive_window_selection.py
@@ -423,6 +450,7 @@ quant-ai-market-lab/
 │   ├── random_forest_risk_forecasting.py
 │   ├── random_forest_validation.py
 │   ├── ridge_alpha_validation.py
+│   ├── ridge_coefficient_stability.py
 │   ├── ridge_risk_forecasting.py
 │   ├── risk_forecast_comparison.py
 │   ├── risk_forecasting.py
@@ -448,7 +476,23 @@ I keep the current Python dependency snapshot in:
 
 `requirements.txt`
 
-Raw and processed market datasets are intentionally excluded from Git version control. The data-ingestion scripts provide the computational route for reconstructing the analysis dataset from the documented data source. A new download may differ from the saved dataset if the provider revises historical adjusted prices, so I distinguish rebuilding the pipeline from reproducing the exact existing data snapshot.
+Raw and processed market datasets are intentionally excluded from Git version control. From the repository root, the following commands install the recorded dependency snapshot and rebuild the inputs for the core analysis:
+
+```bash
+conda create -n quant-ai python=3.12 -y
+conda activate quant-ai
+python -m pip install -r requirements.txt
+python -m src.download_data
+python -m src.compute_returns
+python -m src.exploratory_analysis
+python -m src.pca_analysis
+python -m src.portfolio_optimization
+python -m src.portfolio_backtest
+python src/portfolio_benchmarks.py
+python src/portfolio_robustness.py
+```
+
+The benchmark and robustness scripts currently use direct-file imports, which is why those last two commands use `python src/...` instead of `python -m src...`. Other analyses have their own scripts and methods notes under `src/` and `docs/`. The pinned requirements record my development environment; a fresh download may differ from the historical dataset if the provider revises adjusted prices. These instructions reconstruct the pipeline and do not promise identical numerical results from a revised data snapshot.
 
 ## Completed Research and Remaining Development
 
@@ -467,8 +511,9 @@ linear and nonlinear risk forecasting, chronological model selection,
 model interpretation, regime analysis, portfolio optimization,
 walk-forward backtesting, transaction costs, and robustness analysis.
 
-Before freezing the first quant-ready release, I am completing a final
-documentation and reproducibility pass.
+This is the completed scope of the first quantitative research version.
+The retrospective results and execution assumptions remain visible so a
+reader can question them or rerun the analysis.
 
 I am deliberately leaving the following as optional future extensions:
 

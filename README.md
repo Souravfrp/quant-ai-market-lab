@@ -2,7 +2,22 @@
 
 I built Quant AI Market Lab as an independent research project while moving from mathematics and computer and system sciences into quantitative finance. My master's studies in Mathematics and Computer and System Sciences trained me to reason about probability, algorithms, and optimization. Here I apply those tools to market data while learning the finance needed to judge what the results actually mean.
 
-> **Project status (26 September 2026):** The first quantitative research version is complete. It covers validated market data, return and covariance analysis, PCA, market-condition modeling, SPY risk forecasting, chronological evaluation, minimum-variance portfolio optimization, retrospective backtests, benchmarks, costs, and subperiod checks. The code and results are a historical research exercise, not a live strategy. Further features are listed below as optional extensions.
+> **Project status (26 September 2026):** The first quantitative research workflow is complete and ready for a `v1.0.0` freeze after the local reproduction check. It covers validated market data, return analysis, PCA, market-condition models, SPY risk forecasts, chronological evaluation, minimum-variance portfolios, retrospective backtests, benchmarks, costs, and subperiod checks. This is a historical research exercise, not a live strategy. Optional extensions are listed below.
+
+## Project Summary
+
+I built this project to work through a finance research problem from the data stage to statistical modeling, risk forecasting, and historical portfolio evaluation. I use eight ETFs with different market exposures. I begin with validated prices and returns, study their covariance and common variation through PCA, examine market conditions using KMeans and Gaussian Hidden Markov Models, compare Ridge and Random Forest forecasts of SPY risk, and evaluate long-only minimum-variance portfolios under different covariance windows and trading-cost assumptions.
+
+My aim has been to understand what each method assumes and what the results support. I keep predictive evaluation chronological, check numerical properties that should hold, and explain where the data and experimental design limit the conclusions.
+
+## Key Findings
+
+- **Cross-asset structure:** PC1 explains about **50.53%** of standardized return variation; the first two PCs explain **66.93%**, and the first three **79.01%**.
+- **Risk forecasting:** on the common **565-date historical validation period**, Ridge had MAE **0.003201** and RMSE **0.005386**; Random Forest had MAE **0.003443** and RMSE **0.005982**. Ridge did better in this comparison, which does not establish that it will do better elsewhere.
+- **Model interpretation:** across **87 monthly Ridge refits**, the standardized SPY-return coefficient stayed negative while the volatility and cross-asset-dispersion coefficients stayed positive, although their sizes changed. In the Random Forest validation experiment, recent SPY volatility had the largest measured permutation importance.
+- **Portfolio experiment:** five covariance methods and three cost assumptions produced **15 optimized scenarios**. I also ran **9 benchmark scenarios** and a separate **32 strategy-period** subperiod analysis. The portfolio results are retrospective; the backtest is not evidence of future profitability.
+
+I examined the May–August 2026 SPY forecasting period during development, so I describe it as pseudo-out-of-sample rather than an untouched holdout. The portfolio backtest uses a separate historical period, described below.
 
 ## Motivation
 
@@ -494,7 +509,7 @@ python src/portfolio_robustness.py
 
 The benchmark and robustness scripts currently use direct-file imports, which is why those last two commands use `python src/...` instead of `python -m src...`. Other analyses have their own scripts and methods notes under `src/` and `docs/`. The pinned requirements record my development environment; a fresh download may differ from the historical dataset if the provider revises adjusted prices. These instructions reconstruct the pipeline and do not promise identical numerical results from a revised data snapshot.
 
-## Completed Research and Remaining Development
+## Completed Research and Future Extensions
 
 So far, I have implemented market-data validation, return and covariance analysis, PCA, market-regime modeling, SPY risk forecasting, chronological walk-forward evaluation, minimum-variance portfolio optimization, historical backtesting, benchmark comparisons, transaction-cost analysis, and subperiod robustness testing.
 
@@ -522,8 +537,9 @@ I am deliberately leaving the following as optional future extensions:
 3. broader predictive-model experiments beyond the current Ridge and
    Random Forest comparison
 
-These extensions are not required for the current quantitative-research
-version of the project.
+These extensions are outside the scope of the first quantitative research
+version. If I pursue them later, I will document them separately from the
+reference version rather than changing what the original results mean.
 
 ## Research and Validation Principles
 

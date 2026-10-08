@@ -557,7 +557,7 @@ These checks matter to me because a result can look plausible even when the unde
 
 ## References and Attribution
 
-I am using this project to apply my background in mathematics, algorithms, and computer science to a financial-data problem. Finance is a newer area for me, and I use published material, software documentation, online resources, and AI tools, including ChatGPT, to learn unfamiliar concepts, consider implementation approaches, review work, and improve the organization and wording of the documentation.
+I am using this project to apply my background in mathematics, algorithms, and computer science to a financial-data problem. Finance is a newer area for me, and I use published material, software documentation, online resources, and AI tools, including ChatGPT, Claude, to learn unfamiliar concepts, consider implementation approaches, review work, and improve the organization and wording of the documentation.
 
 I am responsible for understanding the mathematics I present, checking the implementation and results, and deciding what conclusions the evidence supports. I do not present established methods as my own inventions. Where a source or tool informs a method, derivation, implementation, or experiment, I aim to acknowledge that contribution accurately rather than treating assistance with writing as the only possible form of assistance.
 
@@ -570,3 +570,13 @@ Data sources, mathematical references, software documentation, and external meth
 My results describe historical market data, historical risk-forecasting experiments, and retrospective portfolio backtests. They depend on the selected data, models, evaluation periods, and execution assumptions. They do not establish future predictive performance or a profitable live trading strategy and should not be interpreted as investment advice.
 
 I currently use PCA on the full historical sample as a descriptive analysis. If I use dimensionality reduction in future prediction or backtesting experiments, I will fit the transformation using only information available at the relevant historical time.
+
+
+| Research question | What I can report | Limit on the conclusion |
+|---|---|---|
+| What structure is present in the historical returns? | Covariance, PCA directions, KMeans groups and HMM state descriptions. | No established causation or proof of genuine economic regimes. |
+| How large might SPY's next five daily returns be? | RMS point forecasts and measured errors from the baselines, Ridge and Random Forest. | No return-direction forecast or guaranteed future model ranking. |
+| Which weights minimize estimated portfolio variance? | Allocations under the documented covariance estimates and constraints. | No guarantee of maximum returns or best future realized performance. |
+| How did the strategies behave in the backtest? | Retrospective benchmark, cost and subperiod comparisons. | No established profitable live strategy or untouched forward result. |
+
+My [model capabilities and limitations](docs/model_scope_and_limitations.md) explains these boundaries, overlapping forecast targets, development-aware evaluation, model assumptions and the additional experiments needed for stronger claims.
